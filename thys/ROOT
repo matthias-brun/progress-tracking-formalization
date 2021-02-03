@@ -1,0 +1,5 @@
+session Progress_Tracking = Nested_Multisets_Ordinals +
+  options [timeout = 1200]
+  theories
+    Combined
+    Exchange_Abadi
