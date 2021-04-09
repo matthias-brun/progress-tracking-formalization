@@ -1691,6 +1691,7 @@ lemmas alw_implication_frontier_eq_implied_frontier_vacant =
   alw_implication_frontier_eq_implied_frontier_alt_vacant[folded implied_frontier_implied_frontier_alt]
 lemmas implication_frontier_iff_implied_frontier_vacant =
   implication_frontier_iff_implied_frontier_alt_vacant[folded implied_frontier_implied_frontier_alt]
+
 end
 
 end
