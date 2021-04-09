@@ -8,9 +8,9 @@ by Matthias Brun, Sára Decova, Andrea Lattuada, and Dmitriy Traytel. The reposi
 contains the extended version of the paper that provides proof sketches for the safety
 properties and additional details on the formalization (`rep.pdf`).
 
-The formalization has been processed with Isabelle2020 which is available here:
+The formalization has been processed with Isabelle2021 which is available here:
 
-[http://isabelle.in.tum.de/website-Isabelle2020](http://isabelle.in.tum.de/website-Isabelle2020)
+[http://isabelle.in.tum.de/website-Isabelle2021](http://isabelle.in.tum.de/website-Isabelle2021)
 
 The Isabelle theories are in the directory `thys` and correspond to the paper in
 the following way:
@@ -23,7 +23,7 @@ the following way:
 
 The Isabelle theories rely on an existing Archive of Formal Proofs (AFP) installation. To process them, Isabelle must be invoked as follows:
 
-```isabelle jedit -d '<path/to/afp-2020>/thys' -d 'thys'```
+```isabelle jedit -d '<path/to/afp-2021>/thys' -d 'thys'```
 
 where the first path points to the thys directory in the AFP installation and the second points to the thys directory of this repository.
 

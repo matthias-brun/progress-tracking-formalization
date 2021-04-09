@@ -247,17 +247,8 @@ lemma finite_summaries: "finite {xs. distinct xs \<and> (\<forall>(l1, s, l2) \<
 lemma finite_minimal_antichain_path_weightp:
   "finite (minimal_antichain {x. path_weightp l1 l2 x})"
   apply (rule finite_surj[OF finite_summaries, where f = sum_path_weights])
-  apply (auto simp: minimal_antichain_def image_iff)
-  apply (drule aux)
-  apply (auto simp: Let_def)
-  subgoal for x ys
-    apply (rule exI[of _ ys])
-    apply (erule conjI)
-    apply (rule conjI)
-     apply auto []
-    apply (drule spec, drule mp, assumption)
-    apply (auto simp: less_le_not_le)
-    done
+  apply (clarsimp simp: minimal_antichain_def image_iff dest!: aux)
+  apply (fastforce simp: Let_def)
   done
 
 (* antichain of summaries along cycles-less paths (cycle-less = no edge repeated) *)
@@ -290,9 +281,12 @@ definition "path_weightp_distinct l1 l2 s \<equiv> (\<exists>xs. distinct xs \<a
 lemma minimal_antichain_path_weightp_distinct:
   "minimal_antichain {xs. path_weightp l1 l2 xs} = minimal_antichain {xs. path_weightp_distinct l1 l2 xs}"
   unfolding path_weightp_def path_weightp_distinct_def minimal_antichain_def
-  apply auto
-   apply (metis path_distinct order.strict_iff_order subseq_sum_path_weights_le)
-  apply (smt path_distinct less_le_not_le order_trans subseq_sum_path_weights_le)
+  apply safe
+     apply clarsimp
+     apply (metis path_distinct order.strict_iff_order subseq_sum_path_weights_le)
+    apply (blast+) [2]
+  apply clarsimp
+  apply (metis (no_types, lifting) le_less_trans path_distinct subseq_sum_weights_le)
   done
 
 lemma finite_path_weightp_distinct[simp, intro]: "finite {xs. path_weightp_distinct l1 l2 xs}"

@@ -49,7 +49,19 @@ definition justified where
 lemma justified_alt:
   "justified C M = (\<forall>t. 0 < zcount M t \<longrightarrow> supported_strong M t \<or> (\<exists>t'<t. 0 < zcount C t') \<or> zcount M t < zcount C t)"
   unfolding justified_def supported_def supported_strong_def
-  by (smt order.not_eq_order_implies_strict order.strict_trans2 order_zmset_exists_foundation' nonpos_upto_def order.strict_trans1)
+  apply (rule iffI)
+   apply clarsimp
+   apply (drule order_zmset_exists_foundation')
+   apply clarsimp
+  subgoal for t s
+    apply (drule spec[of _ s])
+    apply safe
+      apply (meson le_less_trans less_le_trans nonpos_upto_def)
+    using dual_order.strict_trans1 apply blast
+    using order.order_iff_strict apply auto
+    done
+  apply blast
+  done
 
 definition justified_with where
   "justified_with C M N =
@@ -64,7 +76,18 @@ lemma justified_with_alt: "justified_with C M N =
     (\<exists>s<t. 0 < zcount C s) \<or>
     zcount (M+N) t < zcount C t)"
   unfolding justified_with_def
-  by (smt order.strict_trans order.not_eq_order_implies_strict order_zmset_exists_foundation' zcount_union)
+  apply (rule iffI)
+   apply clarsimp
+   apply (drule order_zmset_exists_foundation')
+   apply clarsimp
+  subgoal for t s
+    apply (drule spec[of _ s])
+    apply safe
+    using dual_order.strict_trans dual_order.strict_trans1 apply blast+
+    apply (metis add_less_zeroD order.order_iff_strict not_less_iff_gr_or_eq order_class.order.strict_trans)
+    done
+  apply blast
+  done
 
 definition PositiveImplies where
   "PositiveImplies v w \<equiv> \<forall>t. zcount v t > 0 \<longrightarrow> zcount w t > 0"
@@ -205,8 +228,6 @@ definition next_recvupd' :: "('p::finite, 'a) configuration \<Rightarrow> ('p, '
     \<and> c1 = c0\<lparr>c_msg := (c_msg c0)(p := (c_msg c0 p)(q := tl (c_msg c0 p q))),
               c_glob := (c_glob c0)(q := c_glob c0 q + hd (c_msg c0 p q))\<rparr>"
 
-term "(fun_upd f p (fun_upd (f p) q q'))"
-
 abbreviation next_recvupd where
   "next_recvupd c0 c1 \<equiv> (\<exists>p q. next_recvupd' c0 c1 p q)"
 
@@ -315,7 +336,9 @@ lemma lift_invariant_to_spec:
   unfolding spec_def
   apply (elim conjE)
   apply (coinduction arbitrary: s)
-  apply (auto intro: assms(1))
+  apply clarsimp
+  apply (intro conjI assms(1))
+  apply safe
   subgoal
   proof -
     fix sa :: "('b, 'a) configuration stream"
@@ -327,6 +350,7 @@ lemma lift_invariant_to_spec:
     then show "init_config (shd (stl sa))"
       using a2 by (metis (lifting) alw_iff_sdrop assms(2))
   qed
+  apply auto
   done
 
 lemma timestamps_sum_distrib[simp]: "(\<Sum>p \<in> A. timestamps (f p)) = timestamps (\<Sum>p \<in> A. f p)"
@@ -633,7 +657,7 @@ lemma justified_add:
                   using assms(3) by (auto simp: add_nonneg_pos intro!: exI[of _ s''])
                 done
               subgoal
-                by (smt assms(3) local.dual_order.strict_trans2 zcount_union)
+                by (metis add.right_neutral add_strict_increasing2 assms(3) less_add_same_cancel1 dual_order.strict_trans2 pos_add_strict zcount_union)
               done
             done
           done
@@ -644,11 +668,20 @@ lemma justified_add:
         apply (cases "supported_strong M2 t")
         subgoal
           apply (rule disjI1)
-          apply (simp only: supported_strong_def)
-          apply (elim exE)
+          using assms(1)[unfolded justified_alt]
+          apply (subst supported_strong_def)
+          apply (subst (asm) supported_strong_def)
+          apply (elim exE conjE)
+          unfolding not_ex
           subgoal for s
-            apply (clarsimp simp: nonpos_upto_def intro!: exI[of _ s])
-            apply (smt assms(1) justified_alt local.dual_order.strict_implies_order local.less_le_trans nonpos_upto_def supported_strong_def)
+            apply clarsimp
+            apply (rule exI[of _ s])
+            apply (intro conjI)
+              apply blast
+             apply (rule add_nonpos_neg)
+              apply (metis order.strict_trans1 less_imp_le not_le not_less_iff_gr_or_eq order_class.dual_order.strict_trans2 supported_strong_def)
+             apply simp
+            apply (clarsimp simp: nonpos_upto_def)
             done
           done
         subgoal
@@ -657,9 +690,9 @@ lemma justified_add:
             by (metis add_cancel_left_left assms(3) order_class.order.not_eq_order_implies_strict zcount_union)
           subgoal
             apply (intro disjI2)
-            apply (rule ccontr)
-            apply (clarsimp simp: not_less)
-            apply (smt assms(2) assms(4) justified_alt)
+            apply clarsimp
+            using assms(2)[unfolded justified_alt, rule_format, of t]
+            apply (metis add.commute add_cancel_left_right add_mono_thms_linordered_field(5) add_strict_increasing2 assms(4) nonzero_lt_gtD)
             done
           done
         done
@@ -702,7 +735,9 @@ lemma justified_add:
                     using assms(4) by (auto simp: add_pos_nonneg intro!: exI[of _ s''])
                   done
                 subgoal
-                  by (smt assms(4) local.dual_order.strict_trans2 zcount_union)
+                  apply (rule disjI2, rule disjI1, rule exI[of _ s'], rule conjI)
+                  using assms(4) apply (auto intro!: add_pos_nonneg)
+                  done
                 done
               done
             done
@@ -717,7 +752,9 @@ lemma justified_add:
             apply (elim exE)
             subgoal for s
               apply (clarsimp simp: nonpos_upto_def intro!: exI[of _ s])
-              apply (smt assms(2) justified_alt local.dual_order.strict_implies_order local.less_le_trans nonpos_upto_def supported_strong_def)
+              using assms(2)[unfolded justified_alt nonpos_upto_def supported_strong_def, rule_format, of s]
+                assms(4)[rule_format, of s]
+              apply (metis (mono_tags, hide_lams) less_add_same_cancel1 dual_order.strict_trans1 less_imp_le not_less order_class.order.not_eq_order_implies_strict order_class.order.strict_implies_order)
               done
             done
           subgoal
@@ -726,9 +763,7 @@ lemma justified_add:
               by (metis add.commute add_cancel_left_left assms(4) order_class.order.not_eq_order_implies_strict zcount_union)
             subgoal
               apply (intro disjI2)
-              apply (rule ccontr)
-              apply (clarsimp simp: not_less)
-              apply (smt assms(1) assms(3) justified_def)
+              apply (metis add.commute add_strict_increasing2 assms(3) not_le sublist_order.add_less zcount_union)
               done
             done
           done
@@ -818,10 +853,7 @@ proof (intro justified_leastI allI impI)
     next
       case 2
       then show ?thesis
-        apply (intro disjI1 exI[of _ s])
-        using s least
-        apply (auto simp: nonpos_upto_def supported_strong_def)
-        done
+        using s least by (auto simp: nonpos_upto_def supported_strong_def)
     next
       case 3
       note case3 = 3
@@ -838,7 +870,7 @@ proof (intro justified_leastI allI impI)
           apply (elim exE conjE)
           subgoal for s'
           apply (intro disjI1 exI[of _ s'])
-            using s(1,2) apply (auto simp: nonpos_upto_def)
+            using s(1,2) apply (auto intro: exI[of _ s'] simp: nonpos_upto_def)
             done
           done
       next
@@ -895,9 +927,7 @@ proof (intro allI impI justified_leastI)
         apply (drule order_zmset_exists_foundation_neg')
         apply (elim exE conjE)
         subgoal for s s'
-          apply (intro exI[of _ s'])
-          apply (auto simp: nonpos_upto_def order_class.antisym)
-          done
+          by (auto intro!: exI[of _ s'] simp: nonpos_upto_def order_class.antisym)
         done
       then show ?thesis
         apply (cases "\<exists>s'\<le>s. zcount (timestamps (zmset_of \<Delta>)) s' > 0")
@@ -1074,9 +1104,7 @@ proof (intro allI impI)
         subgoal
           using 3(1) by blast
         subgoal
-          apply (intro disjI1 exI[of _ t'])
-          using t'(1) apply auto
-          done
+          using t'(1) by (auto intro: exI[of _ t'])
         done
     next
       case 2
@@ -1165,9 +1193,9 @@ proof (intro justified_with_leastI allI impI)
             subgoal for u
               by (metis (full_types) order.ordering_axioms order_class.order.irrefl order_class.order.strict_trans2 ordering.strict_trans s'(1) s(3))
             subgoal for u
-              by (smt assms(5) order.strict_trans s'(1) s(1) zcount_union)
+              by (metis (no_types, hide_lams) 1(2) add_cancel_left_right assms(5) less_trans order_class.antisym s'(1) s(1) zcount_union)
             subgoal
-              by (smt assms(5) order.strict_trans s'(1) s(1,3) zcount_union)
+              by (metis (no_types, hide_lams) 1(2) add_cancel_left_right assms(5) less_trans not_le order_class.antisym order_class.order.strict_trans2 s'(1) s(1) s(3) zcount_union)
             done
           done
       next
@@ -1184,7 +1212,7 @@ proof (intro justified_with_leastI allI impI)
       next
         case 3
         then show ?thesis
-          by (smt assms(4) s(1) zcount_union 2(1))
+          by (metis 2(1) add_cancel_left_right add_strict_increasing2 assms(4) not_le order_class.dual_order.irrefl order_class.dual_order.strict_trans2 pos_add_strict s(1) zcount_union)
       qed
     qed
   next
@@ -1206,7 +1234,9 @@ proof (intro justified_with_leastI allI impI)
     next
       case False
       then have N2t: "0 < zcount N2 t"
-        by (smt 4 assms(5) zcount_union)
+        using 4 assms(5)[rule_format, of t]
+        unfolding not_less zcount_union
+        by linarith
       then show ?thesis
         using assms(3)[unfolded justified_alt supported_strong_def, rule_format, OF N2t]
         apply (elim exE conjE disjE)
@@ -1216,11 +1246,20 @@ proof (intro justified_with_leastI allI impI)
             apply (drule assms(2)[unfolded justified_alt supported_strong_def, rule_format])
             apply (elim exE conjE disjE)
             subgoal for s'
-              by (smt least order.strict_implies_order order.strict_trans nonpos_upto_def supported_strong_def zcount_union)
+              apply (rule disjI1)
+              apply (rule exI[of _ s'])
+              apply (intro conjI)
+                apply simp
+               apply (metis add_cancel_right_right add_neg_neg dual_order.strict_implies_order nonpos_upto_def order_class.order.not_eq_order_implies_strict zcount_union)
+              apply (meson least less_trans)
+              done
             subgoal for s'
-              by (smt assms(5) order.strict_trans zcount_union)
+              by (metis add_pos_nonneg assms(5) less_trans zcount_union)
             subgoal
-              by (smt assms(5) least order.strict_trans zcount_union)
+              apply (rule ccontr)
+              apply (clarsimp simp: not_le not_less)
+              apply (metis (no_types, hide_lams) add_cancel_right_right add_neg_neg assms(4) assms(5) least less_trans not_less order_class.order.not_eq_order_implies_strict pos_add_strict)
+              done
             done
           subgoal
             apply (intro disjI1 exI[of _ s])
@@ -1357,11 +1396,11 @@ proof (intro allI impI)
   next
     case 2
     then show ?thesis
-      by (smt assms(2) zcount_union)
+      by (metis add_less_same_cancel2 assms(2) not_less preorder_class.le_less_trans zcount_union)
   next
     case 3
     then show ?thesis
-      by (smt add_diff_cancel_right' zcount_diff zcount_zmset_of_nonneg)
+      by fastforce
   next
     case 4
     then show ?thesis
@@ -1414,7 +1453,7 @@ proof (intro allI impI)
   next
     case 3
     then show ?thesis
-      by (smt add_diff_cancel_right' zcount_diff zcount_zmset_of_nonneg)
+      by blast
   next
     case 4
     then show ?thesis
@@ -1451,7 +1490,7 @@ proof (intro allI impI justified_with_leastI)
   next
     case 2
     then show ?thesis
-      by (smt assms(2) zcount_diff)
+      using diff_add_cancel zcount_union zcount_zmset_of_nonneg by auto
   next
     case 3
     then obtain s where s: "s < t" "0 < zcount C s" "\<forall>s'<s. zcount C s' = 0"
@@ -1465,9 +1504,7 @@ proof (intro allI impI justified_with_leastI)
           apply auto [2]
         apply (intro allI impI)
         subgoal for s'
-          using assms(2)[rule_format, of s']
-          apply auto
-          done
+          using assms(2)[rule_format, of s'] by auto
         done
       done
     then consider
@@ -1484,15 +1521,12 @@ proof (intro allI impI justified_with_leastI)
     next
       case 2
       then show ?thesis
-        apply (intro disjI1 exI[of _ s])
-        using s least
-        apply (auto simp: nonpos_upto_def)
-        done
+        using s least by (auto simp: nonpos_upto_def)
     next
       case 3
       note case3 = 3
       with s(2) have Ns: "0 < zcount N s"
-        by - (rule ccontr, auto simp: not_less)
+        by (auto intro: ccontr simp: not_less)
       note assms(4)[unfolded justified_alt, rule_format, OF Ns]
       then consider "supported_strong N s" | "\<exists>t'<s. 0 < zcount C t'" | "zcount N s < zcount C s"
         using not_less by blast
@@ -1503,9 +1537,7 @@ proof (intro allI impI justified_with_leastI)
           unfolding supported_strong_def
           apply (elim exE conjE)
           subgoal for s'
-            apply (intro disjI1 exI[of _ s'])
-            using s(1,2) least apply (auto simp: nonpos_upto_def)
-            done
+            using s(1,2) least by (auto intro: exI[of _ s'] simp: nonpos_upto_def)
           done
       next
         case 2
@@ -1532,9 +1564,7 @@ proof (intro allI impI justified_with_leastI)
           unfolding supported_strong_def
           apply (elim exE conjE)
           subgoal for s'
-            apply (intro disjI1 exI[of _ s'])
-            using s(1,2) least apply (auto simp: nonpos_upto_def)
-            done
+            using s(1,2) least by (auto intro: exI[of _ s'] simp: nonpos_upto_def)
           done
       next
         case 2
@@ -1826,8 +1856,9 @@ proof -
       apply (subst nrec0s)
       apply (subst add_0)
       apply (rule ccontr)
-      using \<Delta>_in_nrec[of s]
-      apply (smt assms(1) local.dual_order.trans s(1) vacant_upto_def)
+      unfolding not_le
+      apply (drule \<Delta>_in_nrec[of s])
+      apply (meson assms(1) order_trans pos_zcount_in_zmset s(1) vacant_upto_def zcount_ne_zero_iff)
       done
     with s_pos have False
       by linarith
@@ -1955,7 +1986,9 @@ proof -
           have \<Delta>inc: "0 < zcount ?\<Delta> s"
             using complex_change(3) count1s s(2) by auto
           have "0 < zcount (timestamps (zmset_of \<Delta>mint_msg)) s"
-            by (smt \<Delta>inc change(2) change(9) fun_upd_same nocaps of_nat_0_le_iff s(1) zcount_diff zcount_union)
+            using \<Delta>inc change(2)[rule_format, of s] nocaps[rule_format, OF s(1)]
+            unfolding change(9) fun_upd_same zcount_union zcount_diff
+            by linarith
           then obtain u where u: "u < s" "0 < zcount (c_caps c0 p) u" "\<forall>u'<u. zcount (c_caps c0 p) u' = 0"
             apply atomize_elim
             apply (drule pos_image_zmset_obtain_pre[rotated])
@@ -1976,10 +2009,9 @@ proof -
                 done
               done
             done
-          then have "count \<Delta>neg u = zcount (c_caps c0 p) u"
-            by (smt change(2) change(9) diff_diff_eq2 fun_upd_same local.dual_order.strict_trans nocaps s(1) zcount_diff zcount_of_mset zcount_zmset_of_nonneg algebra_simps)
-          then have count1u: "zcount ?M1 u < 0"
-            by (smt change(9) complex_change(3) complex_change(4) fun_upd_same local.dual_order.strict_trans nocaps s(1) s(3) u(1) u(2) u(3) zcount_diff zcount_union)
+          have count1u: "zcount ?M1 u < 0"
+            using complex_change(4)[of u] nocaps[unfolded change(9) fun_upd_same] dual_order.strict_trans[OF s(1) u(1)] s(3)[OF u(1)] u(2) u(3)
+            by auto
           then have "nonpos_upto ?M1 u"
             unfolding nonpos_upto_def
             using least dual_order.strict_implies_order dual_order.strict_trans2 s(1) u(1) by blast
@@ -2015,9 +2047,15 @@ proof -
             "\<And>s. s < t \<Longrightarrow> count \<Delta>neg s = zcount (c_caps c0 p) s"
             "\<And>s. s < t \<Longrightarrow> count \<Delta>mint_self s = 0"
             "\<And>p s'. s' \<le> s \<Longrightarrow> count \<Delta>mint_msg (p,s') = 0"
-              apply (smt change(2) change(9) diff_diff_eq2 fun_upd_same nocaps s(1) zcount_diff zcount_of_mset zcount_zmset_of_nonneg algebra_simps)
-             apply (smt change(2) change(9) diff_diff_eq2 fun_upd_same nocaps of_nat_0_le_iff of_nat_eq_0_iff zcount_diff zcount_of_mset)
-            apply (smt change(4)[unfolded minting_msg_def] count_eq_zero_iff local.dual_order.strict_trans1 prod.simps(2) s(3))
+            subgoal for s'
+              using change(2) nocaps s(1) order_class.order.not_eq_order_implies_strict
+              by (fastforce simp: change(9))
+            subgoal for s'
+              using nocaps[rule_format, of s']
+              by (simp add: change(9) \<open>\<And>s'. s' < t \<Longrightarrow> int (count \<Delta>neg s') = zcount (c_caps c0 p) s'\<close>)
+            subgoal for p s'
+              using change(4)[unfolded minting_msg_def, rule_format, of "(p,s')"] s(3)
+              by (force intro: ccontr)
             done
           have caps_le_ii0: "zcount (c_caps c0 p) s \<le> zcount M s"
           proof (rule ccontr)
@@ -2065,7 +2103,7 @@ proof -
           from 2 have "count \<Delta>neg t < zcount ?\<Delta>pos t"
             by auto
           then have "0 < count \<Delta>mint_self t \<or> 0 < zcount (timestamps (zmset_of \<Delta>mint_msg)) t"
-            by (smt gr_zeroI of_nat_0 of_nat_less_0_iff zcount_of_mset zcount_union)
+            by (metis 2(2) add.commute add.left_neutral not_gr_zero of_nat_0 zero_lt_diff zcount_diff zcount_of_mset zcount_union zcount_zmset_of_nonneg)
           then obtain s where s: "s \<le> t" "0 < zcount (c_caps c0 p) s" "\<forall>s'<s. zcount (c_caps c0 p) s' = 0"
             apply atomize_elim
             apply (elim disjE)
@@ -2106,9 +2144,15 @@ proof -
             "\<And>s. s < t \<Longrightarrow> count \<Delta>neg s = zcount (c_caps c0 p) s"
             "\<And>s. s < t \<Longrightarrow> count \<Delta>mint_self s = 0"
             "\<And>p s'. s' \<le> s \<Longrightarrow> count \<Delta>mint_msg (p,s') = 0"
-              apply (smt change(2) change(9) diff_diff_eq2 fun_upd_same nocaps s(1) zcount_diff zcount_of_mset zcount_zmset_of_nonneg algebra_simps)
-             apply (smt change(2) change(9) diff_diff_eq2 fun_upd_same nocaps of_nat_0_le_iff of_nat_eq_0_iff zcount_diff zcount_of_mset)
-            apply (smt change(4)[unfolded minting_msg_def] count_eq_zero_iff local.dual_order.strict_trans1 prod.simps(2) s(3))
+            subgoal for s'
+              using change(2) nocaps s(1) order_class.order.not_eq_order_implies_strict
+              by (fastforce simp: change(9))
+            subgoal for s'
+              using nocaps[rule_format, of s']
+              by (simp add: change(9) \<open>\<And>s'. s' < t \<Longrightarrow> int (count \<Delta>neg s') = zcount (c_caps c0 p) s'\<close>)
+            subgoal for p s'
+              using change(4)[unfolded minting_msg_def, rule_format, of "(p,s')"] s(3)
+              by (force intro: ccontr)
             done
           { assume less: "s < t"
             have caps_le_ii0: "zcount (c_caps c0 p) s \<le> zcount M s"
@@ -2133,11 +2177,12 @@ proof -
                   unfolding supported_strong_def
                   by blast
                 have "0 \<le> zcount ?M1 u"
-                  by (smt least less local.antisym_conv2 local.dual_order.strict_trans nonpos_upto_def supported_strong_def nosupp u(1))
+                  using least nosupp[unfolded supported_strong_def nonpos_upto_def, simplified, rule_format, of u] dual_order.strict_trans[OF less u(1)]
+                  by fastforce
                 then have "0 < zcount ?\<Delta>pos u"
-                  by (smt \<Delta>counts(1) complex_change(3) diff_add_cancel less local.dual_order.strict_trans s(3) u(1) u(2) zcount_of_mset zcount_union)
+                  using \<Delta>counts(1)[of u] s(3) u(1) u(2) less by force
                 then have "0 < count \<Delta>mint_self u \<or> 0 < zcount (timestamps (zmset_of \<Delta>mint_msg)) u"
-                  by (smt gr_zeroI of_nat_0 zcount_of_mset zcount_union)
+                  using gr0I by fastforce
                 then obtain u' where "u' \<le> u" "0 < zcount (c_caps c0 p) u'"
                   apply atomize_elim
                   apply (elim disjE)
@@ -2427,7 +2472,8 @@ lemma invs_imp_InvGlobNonposImpRecordsNonpos:
       using order_zmset_exists_foundation[OF u] by auto
       \<comment> \<open>from the nrec count we know that GII also has positive count\<close>
     from u'(1,3) assms(2) gvu have pos_gii: "0 < zcount ?GII u'"
-      unfolding InvRecordCount_def by (smt zcount_union)
+      unfolding InvRecordCount_def
+      by (metis add_diff_cancel_left' diff_eq_eq less_add_same_cancel1 order_class.order.strict_trans1 zcount_diff)
       \<comment> \<open>Case distinction on which part of the partition GII's u is in\<close>
     { \<comment> \<open>Original proof from Abadi paper, change is justified by uprightness\<close>
       assume "supported_strong ?GII u'"
@@ -2435,10 +2481,8 @@ lemma invs_imp_InvGlobNonposImpRecordsNonpos:
       then obtain v where v: "v \<le> u'" "zcount ?GII v < 0"
         using order.strict_implies_order supported_strong_def by blast
         \<comment> \<open>..which is also negative in nrec..\<close>
-      with v(1) assms(2) have "zcount (records c) v < 0"
-        apply (simp add: InvRecordCount_def)
-        apply (smt gvu order_trans u'(3) zcount_union)
-        done
+      with u'(3) v(1) assms(2) have "zcount (records c) v < 0"
+        by (metis (no_types, hide_lams) InvRecordCount_def add.commute gvu less_add_same_cancel2 dual_order.trans not_le order_class.dual_order.strict_trans1 zcount_union)
         \<comment> \<open>..contradicting InvNrecNonneg\<close>
       with assms(3) have "False"
         unfolding InvRecordsNonneg_def
@@ -2567,8 +2611,9 @@ proof -
     proof cases
       case 1 \<comment> \<open>s can't be supported_strong, since either glob or records would have to be positive at the support\<close>
       then show False
-        using norec count s(3) supported_strong_def
-        by (smt dual_order.strict_implies_order zcount_union)
+        using norec count s(3)
+        unfolding supported_strong_def
+        by (metis (full_types) add.commute add.left_neutral less_le preorder_class.less_irrefl zcount_union)
     next
       case 2 \<comment> \<open>no lesser capabilities exist\<close>
       then show ?thesis
@@ -2872,11 +2917,9 @@ proof (rule ccontr)
     have "zcount (c_glob c1 q) s \<le> 0"
       using globs by linarith
     then have "\<forall>s'\<le>s. zcount (c_glob c1 q) s' \<le> 0"
-      by (smt change(4) fun_upd_same gvu0 ia\<kappa> order.trans less_le s(1,3) t'(1) zcount_union)
+      using s(1) t'(4) by auto
     with globs show False
-      unfolding npeq1[unfolded nonpos_upto_def, symmetric]
-      unfolding vacant_upto_def
-      by auto
+      by (auto simp: npeq1[unfolded nonpos_upto_def, symmetric] vacant_upto_def)
   next
     case 2
     then obtain s where s: "s < t'" "zcount (GlobalIncomingInfo c0 1 p q) s < 0" "\<forall>s'<s. zcount (InfoAt c0 0 p q) s' \<le> 0"
@@ -2886,7 +2929,9 @@ proof (rule ccontr)
     have rc: "zcount (records c0) s = 0"
       using dual_order.strict_implies_order dual_order.strict_trans1 nvu0 s(1) t'(1) vacant_upto_def by blast
     show False
-      by (smt GII_eq_GIA InvRecordCount_def rc assms(6) change(1) change(4) fun_upd_same s(1) s(2) t'(4) zcount_diff zcount_union)
+      using assms(6) change(1,4) s(1,2) rc t'(4)
+      unfolding GII_eq_GIA InvRecordCount_def fun_upd_same
+      by clarsimp (metis add.commute add_mono_thms_linordered_field(1) not_le recordcount)
   next
     case 3
     with nvu0 t'(1) show False
@@ -2894,7 +2939,11 @@ proof (rule ccontr)
   next
     case 4
     then have "0 < zcount (c_glob c0 q) t'"
-      by (smt GII_eq_GIA change(1) ia\<kappa> recordcount zcount_diff zcount_union)
+      using change(1) ia\<kappa> t'(3)
+      unfolding GII_eq_GIA
+      apply clarsimp
+      apply (metis add.right_neutral preorder_class.less_irrefl recordcount)
+      done
     then show False
     by (simp add: t'(3))
   qed
@@ -2983,11 +3032,15 @@ proof -
     moreover assume "alw (holds InvRecordCount) s"
     ultimately have "alw (relates SafeGlobMono) s"
       apply (coinduction arbitrary: s)
-      apply (auto simp: relates_def intro!: next'_imp_SafeGlobMono)
-      apply (subst (asm) alw_holds2)
-      apply clarify
-      apply (drule alwD)+
-      apply simp
+      apply (clarsimp simp: relates_def intro!: next'_imp_SafeGlobMono)
+      apply (rule conjI)
+       apply (rule next'_imp_SafeGlobMono)
+           apply auto [2]
+         apply (subst (asm) alw_holds2)
+         apply clarify
+         apply (drule alwD)+
+         apply simp
+        apply auto
       done
   }
   with spec show ?thesis
@@ -3053,34 +3106,40 @@ proof (rule ccontr)
     using assms(3)
     by (auto simp: InvGlobNonposEqVacant_def vacant_upto_def nonpos_upto_def)
   let ?c1 = "the (while_option (\<lambda>c. hd (c_msg c p q) \<noteq> M) (\<lambda>c. SOME c'. next_recvupd' c c' p q) c)"
-  have [simp]: "M \<in> set (c_msg c p q) \<Longrightarrow> c_msg (SOME c'. next_recvupd' c c' p q) p q = tl (c_msg c p q)" for c
+  have r[simp]: "M \<in> set (c_msg c p q) \<Longrightarrow> c_msg (SOME c'. next_recvupd' c c' p q) p q = tl (c_msg c p q)" for c
     by (rule someI2_ex[OF ex_next_recvupd]) (auto simp: next_recvupd'_def)
   obtain c1 where while_some:
     "while_option (\<lambda>c. hd (c_msg c p q) \<noteq> M) (\<lambda>c. SOME c'. next_recvupd' c c' p q) c = Some c1"
     apply atomize_elim
     apply (rule measure_while_option_Some[where P="\<lambda>c. M \<in> set (c_msg c p q)"
           and f="\<lambda>c. Min {i. i < length (c_msg c p q) \<and> M = c_msg c p q ! i}"])
-     apply (auto simp: assms(1))
-     apply (metis list.exhaust_sel list.sel(2) set_ConsD)
-    apply (subst Min_gr_iff)
-      apply (auto simp: in_set_conv_nth nth_tl)
-    apply (subst Min_less_iff)
-      apply (auto simp: in_set_conv_nth nth_tl)
-     apply (smt One_nat_def diff_Suc_1 gr_implies_not_zero hd_conv_nth less_Suc_eq_0_disj less_imp_Suc_add list.size(3))
-    apply (smt One_nat_def diff_Suc_1 gr_implies_not_zero hd_conv_nth lessI less_Suc_eq_0_disj list.exhaust_sel list.size(3) nth_Cons_Suc)
+     apply clarsimp
+     apply safe
+      apply (metis list.exhaust_sel list.sel(2) set_ConsD)
+     apply (subst Min_gr_iff)
+       apply (auto simp: in_set_conv_nth nth_tl) [2]
+    apply clarsimp
+     apply (subst Min_less_iff)
+       apply (auto simp: in_set_conv_nth nth_tl) []
+      apply (clarsimp simp: in_set_conv_nth nth_tl)
+    apply (metis (no_types, hide_lams) Suc_less_eq Suc_pred hd_conv_nth list.size(3) not_gr_zero not_less_zero)
+     apply (clarsimp simp: in_set_conv_nth nth_tl)
+    subgoal for s x
+      by (rule exI[of _ "x-1"])
+        (metis One_nat_def Suc_le_eq Suc_pred' diff_less diff_less_mono hd_conv_nth length_tl list.size(3) not_gr_zero nth_tl zero_less_Suc)
+    apply (meson assms(1) in_set_conv_nth)
     done
   have c1: "(\<lambda>c0 c1. next_recvupd' c0 c1 p q)\<^sup>*\<^sup>* c c1" "c_msg c1 p q \<noteq> []" "hd (c_msg c1 p q) = M"
     subgoal
       apply (rule conjunct2)
       apply (rule while_option_rule[OF _ while_some, where P="\<lambda>d. M \<in> set (c_msg d p q) \<and> (\<lambda>c0 c1. next_recvupd' c0 c1 p q)\<^sup>*\<^sup>* c d"])
-      apply (auto simp:  assms(1) elim!: rtrancl_into_rtrancl[to_pred] intro: someI2_ex[OF ex_next_recvupd])
-      apply (metis list.exhaust_sel list.sel(2) set_ConsD)
+       apply (rule conjI)
+        apply (metis list.sel(1) list.sel(3) list.set_cases r)
+       apply (auto simp: assms(1) elim!: rtrancl_into_rtrancl[to_pred] intro: someI2_ex[OF ex_next_recvupd])
       done
     subgoal
       using while_option_rule[OF _ while_some, where P="\<lambda>c. M \<in> set (c_msg c p q)"]
-      apply (auto simp: assms(1))
-      apply (metis list.exhaust_sel list.sel(2) set_ConsD)
-      done
+      by (metis assms(1) empty_iff hd_Cons_tl list.set(1) r set_ConsD)
     subgoal
       using while_option_stop[OF while_some] by simp
     done

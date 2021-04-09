@@ -8,31 +8,36 @@ type_synonym 't count_vec = "'t multiset"
 type_synonym 't delta_vec = "'t zmultiset"
 
 definition vacant_upto :: "'t delta_vec \<Rightarrow> 't :: order \<Rightarrow> bool" where
-  "vacant_upto a t \<equiv> (\<forall>s. s \<le> t \<longrightarrow> zcount a s = 0)"
+  "vacant_upto a t = (\<forall>s. s \<le> t \<longrightarrow> zcount a s = 0)"
 
 abbreviation nonpos_upto :: "'t delta_vec \<Rightarrow> 't :: order \<Rightarrow> bool" where
-  "nonpos_upto a t \<equiv> (\<forall>s. s \<le> t \<longrightarrow> zcount a s \<le> 0)"
+  "nonpos_upto a t \<equiv> \<forall>s. s \<le> t \<longrightarrow> zcount a s \<le> 0"
 
 definition supported_strong :: "'t delta_vec \<Rightarrow> 't :: order \<Rightarrow> bool" where
-  "supported_strong a t \<equiv> (\<exists>s. s < t \<and> zcount a s < 0 \<and> nonpos_upto a s)"
+  "supported_strong a t = (\<exists>s. s < t \<and> zcount a s < 0 \<and> nonpos_upto a s)"
 
 definition supported :: "'t delta_vec \<Rightarrow> 't :: order \<Rightarrow> bool" where
-  "supported a t \<equiv> (\<exists>s. s < t \<and> zcount a s < 0)"
+  "supported a t = (\<exists>s. s < t \<and> zcount a s < 0)"
 
 definition upright :: "'t :: order delta_vec \<Rightarrow> bool" where
-  "upright a \<equiv> (\<forall>t. zcount a t > 0 \<longrightarrow> supported a t)"
+  "upright a = (\<forall>t. zcount a t > 0 \<longrightarrow> supported a t)"
 
-lemma upright_alt:  "upright a \<equiv> (\<forall>t. zcount a t > 0 \<longrightarrow> supported_strong a t)"
+lemma upright_alt:  "upright a \<longleftrightarrow> (\<forall>t. zcount a t > 0 \<longrightarrow> supported_strong a t)"
   unfolding upright_def supported_def supported_strong_def
-  by (smt le_less_trans less_le_trans order_zmset_exists_foundation)
+  by (rule iffI) (meson dual_order.strict_trans1 order.strict_trans1 order_zmset_exists_foundation')+
 
 definition beta_upright :: "'t :: order delta_vec \<Rightarrow> 't :: order delta_vec \<Rightarrow> bool" where
-  "beta_upright va vb \<equiv> \<forall>t. zcount va t > 0 \<longrightarrow> (\<exists>s. s < t \<and> (zcount va s < 0 \<or> zcount vb s < 0))"
+  "beta_upright va vb = (\<forall>t. zcount va t > 0 \<longrightarrow> (\<exists>s. s < t \<and> (zcount va s < 0 \<or> zcount vb s < 0)))"
 
 lemma beta_upright_alt:
-  "beta_upright va vb \<equiv> \<forall>t. zcount va t > 0 \<longrightarrow> (\<exists>s. s < t \<and> (zcount va s < 0 \<or> zcount vb s < 0) \<and> nonpos_upto va s)"
+  "beta_upright va vb = (\<forall>t. zcount va t > 0 \<longrightarrow> (\<exists>s. s < t \<and> (zcount va s < 0 \<or> zcount vb s < 0) \<and> nonpos_upto va s))"
   unfolding beta_upright_def
-  by (smt le_less_trans less_le_trans order_zmset_exists_foundation)
+  apply (rule iffI)
+   apply clarsimp
+   apply (drule order_zmset_exists_foundation)
+   apply (metis le_less_linear less_le_trans order.strict_trans1)
+  apply blast
+  done
 
 (* count_vec: nrec, the occupancy vector
    ('p \<Rightarrow> delta_vec): temp, the local change in the occupancy vector due to ops performed at given processor
@@ -47,14 +52,14 @@ record ('p, 't) configuration =
 type_synonym ('p, 't) computation = "('p, 't) configuration stream"
 
 definition init_config :: "('p :: finite, 't :: order) configuration \<Rightarrow> bool" where
-  "init_config c \<equiv>
-      (\<forall>p. c_temp c p = {#}\<^sub>z) \<and>
+  "init_config c =
+     ((\<forall>p. c_temp c p = {#}\<^sub>z) \<and>
       (\<forall>p1 p2. c_msg c p1 p2 = []) \<and>
       (\<forall>p. c_glob c p = c_records c) \<and>
-      (\<forall>t. 0 \<le> zcount (c_records c) t)"
+      (\<forall>t. 0 \<le> zcount (c_records c) t))"
 
 definition next_performop' :: "('p, 't :: order) configuration \<Rightarrow> ('p, 't) configuration \<Rightarrow> 'p \<Rightarrow> 't count_vec \<Rightarrow> 't count_vec \<Rightarrow> bool" where
-  "next_performop' c0 c1 p c r \<equiv>
+  "next_performop' c0 c1 p c r =
    (let \<Delta> = zmset_of r - zmset_of c in
       (\<forall>t. int (count c t) \<le> zcount (c_records c0) t)
     \<and> upright \<Delta>
@@ -76,19 +81,19 @@ abbreviation next_sendupd where
   "next_sendupd s \<equiv> (\<exists>p tt. next_sendupd' (shd s) (shd (stl s)) p tt)"
 
 definition next_recvupd' where
-  "next_recvupd' c0 c1 p q \<equiv>
-    c_msg c0 p q \<noteq> []
+  "next_recvupd' c0 c1 p q =
+   (c_msg c0 p q \<noteq> []
     \<and> c1 = c0\<lparr>c_msg := (c_msg c0)(p := (c_msg c0 p)(q := tl (c_msg c0 p q))),
-              c_glob := (c_glob c0)(q := c_glob c0 q + hd (c_msg c0 p q))\<rparr>"
+              c_glob := (c_glob c0)(q := c_glob c0 q + hd (c_msg c0 p q))\<rparr>)"
 
 abbreviation next_recvupd where
   "next_recvupd s \<equiv> (\<exists>p q. next_recvupd' (shd s) (shd (stl s)) p q)"
 
 definition "next" where
-  "next s \<equiv> next_performop s \<or> next_sendupd s \<or> next_recvupd s"
+  "next s = (next_performop s \<or> next_sendupd s \<or> next_recvupd s \<or> (shd (stl s) = shd s))"
 
 definition spec :: "('p :: finite, 't :: order) computation \<Rightarrow> bool" where
-  "spec s \<equiv> holds init_config s \<and> alw next s"
+  "spec s = (holds init_config s \<and> alw next s)"
 
 abbreviation GlobVacantUpto where
   "GlobVacantUpto c q t \<equiv> vacant_upto (c_glob c q) t"
@@ -98,21 +103,21 @@ abbreviation NrecVacantUpto where
 
 (* This is the main safety property (safe) *)
 definition SafeGlobVacantUptoImpliesStickyNrec :: "('p :: finite, 't :: order) computation \<Rightarrow> bool" where
-  "SafeGlobVacantUptoImpliesStickyNrec s \<equiv>
+  "SafeGlobVacantUptoImpliesStickyNrec s =
      (let c = shd s in \<forall>t q. GlobVacantUpto c q t \<longrightarrow> alw (holds (\<lambda>c. NrecVacantUpto c t)) s)"
 
 (* This is safe2 *)
 definition SafeStickyNrecVacantUpto :: "('p :: finite, 't :: order) computation \<Rightarrow> bool" where
-  "SafeStickyNrecVacantUpto s \<equiv>
+  "SafeStickyNrecVacantUpto s =
      (let c = shd s in \<forall>t. NrecVacantUpto c t \<longrightarrow> alw (holds (\<lambda>c. NrecVacantUpto c t)) s)"
 
 (* This is inv1 *)
 definition InvGlobVacantUptoImpliesNrec :: "('p :: finite, 't :: order) configuration \<Rightarrow> bool" where
-  "InvGlobVacantUptoImpliesNrec c \<equiv>
+  "InvGlobVacantUptoImpliesNrec c =
      (\<forall>t q. vacant_upto (c_glob c q) t \<longrightarrow> vacant_upto (c_records c) t)"
 
 definition InvTempUpright where
-  "InvTempUpright c \<equiv> (\<forall>p. upright (c_temp c p))"
+  "InvTempUpright c = (\<forall>p. upright (c_temp c p))"
 
 lemma init_InvTempUpright: "init_config c \<Longrightarrow> InvTempUpright c"
   by (simp add: InvTempUpright_def init_config_def upright_def)
@@ -146,13 +151,14 @@ proof -
       with uprb have "supported_strong (va+vb) t"
         apply (cases "\<exists>s. s \<le> x \<and> 0 < zcount vb s")
          apply (clarsimp simp: upright_alt supported_strong_def)
-         apply (smt dual_order.strict_trans2 order.strict_implies_order order_trans)
+         apply (meson add_nonpos_neg less_imp_le order.strict_trans2 order.trans add_nonpos_nonpos)
         apply simp
-        by (force simp: supported_strong_def intro!: exI[of _ x])
+        apply (force simp: supported_strong_def intro!: exI[of _ x])
+        done
     }
     with upr1 upr2 zcnt have "supported_strong ?v0 t" unfolding supported_strong_def
       apply (cases "0 < zcount v1 t"; cases "0 < zcount v2 t")
-      apply (auto) [2]
+      apply auto [2]
       apply (subst (1 2) add.commute)
       apply auto
       done
@@ -173,6 +179,7 @@ lemma next_InvTempUpright: "holds InvTempUpright s \<Longrightarrow> next s \<Lo
   subgoal
     unfolding InvTempUpright_def next_recvupd'_def
     by (auto simp: upright_vec_add)
+  subgoal by simp
   done
 
 lemma alw_InvTempUpright: "spec s \<Longrightarrow> alw (holds InvTempUpright) s"
@@ -182,10 +189,10 @@ lemma alw_InvTempUpright: "spec s \<Longrightarrow> alw (holds InvTempUpright) s
   done
 
 definition IncomingInfo where
-  "IncomingInfo c k p q \<equiv> sum_list (drop k (c_msg c p q)) + c_temp c p"
+  "IncomingInfo c k p q = (sum_list (drop k (c_msg c p q)) + c_temp c p)"
 
 definition InvIncomingInfoUpright where
-  "InvIncomingInfoUpright c \<equiv> \<forall>k p q. upright (IncomingInfo c k p q)"
+  "InvIncomingInfoUpright c = (\<forall>k p q. upright (IncomingInfo c k p q))"
 
 lemma upright_0: "upright 0"
   by (simp add: upright_def)
@@ -211,20 +218,22 @@ lemma next_InvIncomingInfoUpright: "holds InvIncomingInfoUpright s \<Longrightar
     unfolding next_recvupd'_def Let_def InvIncomingInfoUpright_def IncomingInfo_def
     apply (clarsimp simp: drop_Suc[symmetric])
     done
+  subgoal
+    by simp
   done
 
 lemma alw_InvIncomingInfoUpright: "spec s \<Longrightarrow> alw (holds InvIncomingInfoUpright) s"
   by (metis (mono_tags, lifting) alw_iff_sdrop alw_invar holds.elims(2) holds.elims(3) init_InvIncomingInfoUpright next_InvIncomingInfoUpright spec_def)
 
 definition GlobalIncomingInfo :: "('p :: finite, 't) configuration \<Rightarrow> nat \<Rightarrow> 'p \<Rightarrow> 'p \<Rightarrow> 't delta_vec" where
-  "GlobalIncomingInfo c k p q \<equiv> \<Sum>p' \<in> UNIV. IncomingInfo c (if p' = p then k else 0) p' q"
+  "GlobalIncomingInfo c k p q = (\<Sum>p' \<in> UNIV. IncomingInfo c (if p' = p then k else 0) p' q)"
 
 (* (GlobalIncomingInfo c 0 q q) sums up all info incoming at q *)
 abbreviation GlobalIncomingInfoAt where
   "GlobalIncomingInfoAt c q \<equiv> GlobalIncomingInfo c 0 q q"
 
 definition InvGlobalRecordCount where
-  "InvGlobalRecordCount c \<equiv> \<forall>q. c_records c = GlobalIncomingInfoAt c q + c_glob c q"
+  "InvGlobalRecordCount c = (\<forall>q. c_records c = GlobalIncomingInfoAt c q + c_glob c q)"
 
 lemma init_InvGlobalRecordCount: "holds init_config s \<Longrightarrow> holds InvGlobalRecordCount s"
   by (simp add: InvGlobalRecordCount_def init_config_def GlobalIncomingInfo_def IncomingInfo_def)
@@ -257,8 +266,7 @@ lemma next_InvGlobalRecordCount: "holds InvGlobalRecordCount s \<Longrightarrow>
   unfolding InvGlobalRecordCount_def init_config_def GlobalIncomingInfo_def IncomingInfo_def next_def
   apply (elim disjE)
   subgoal
-    apply (simp add: next_performop'_def Let_def)
-    apply clarify
+    apply (clarsimp simp: next_performop'_def Let_def)
     subgoal for p c q r
       apply (simp add: sum.distrib)
       apply (subst sum_if_distrib_add)
@@ -266,8 +274,7 @@ lemma next_InvGlobalRecordCount: "holds InvGlobalRecordCount s \<Longrightarrow>
       done
     done
   subgoal
-    apply (simp add: next_sendupd'_def Let_def)
-    apply clarify
+    apply (clarsimp simp: next_sendupd'_def Let_def)
     subgoal for p tt q
       apply (simp add: if_distrib[of "\<lambda>f. f _"])
       apply (simp add: if_distrib[of sum_list])
@@ -282,8 +289,7 @@ lemma next_InvGlobalRecordCount: "holds InvGlobalRecordCount s \<Longrightarrow>
       done
     done
   subgoal
-    apply (simp add: next_recvupd'_def Let_def fun_upd_def)
-    apply clarify
+    apply (clarsimp simp: next_recvupd'_def Let_def fun_upd_def)
     subgoal for p q q'
       apply (simp add: if_distrib[of "\<lambda>f. f _"])
       apply safe
@@ -300,6 +306,8 @@ lemma next_InvGlobalRecordCount: "holds InvGlobalRecordCount s \<Longrightarrow>
       apply simp
       done
     done
+  subgoal
+    by simp
   done
 
 (* This is inv2 in the short paper *)
@@ -307,7 +315,7 @@ lemma alw_InvGlobalRecordCount: "spec s \<Longrightarrow> alw (holds InvGlobalRe
   by (metis (no_types, lifting) alw_iff_sdrop alw_invar init_InvGlobalRecordCount next_InvGlobalRecordCount spec_def)
 
 definition InvGlobalIncomingInfoUpright where
-  "InvGlobalIncomingInfoUpright c \<equiv> \<forall>k p q. upright (GlobalIncomingInfo c k p q)"
+  "InvGlobalIncomingInfoUpright c = (\<forall>k p q. upright (GlobalIncomingInfo c k p q))"
 
 lemma upright_sum_upright: "finite X \<Longrightarrow> \<forall>x. upright (A x) \<Longrightarrow> upright (\<Sum>x\<in>X. A x)"
   by (induct X rule: finite_induct) (auto simp: upright_0 upright_vec_add)
@@ -341,6 +349,8 @@ lemma next_nrec_pos: "holds nrec_pos s \<Longrightarrow> next s \<Longrightarrow
     by (auto simp: next_sendupd'_def Let_def)
   subgoal for t
     by (auto simp: next_recvupd'_def Let_def)
+  subgoal
+    by simp
   done
 
 lemma alw_nrec_pos: "spec s \<Longrightarrow> alw (holds nrec_pos) s"
@@ -407,15 +417,13 @@ lemma invs_imp_InvGlobVacantUptoImpliesNrec:
       by (simp add: order.not_eq_order_implies_strict)
     with assms(2) globvut uleqt have *: "0 < zcount (GlobalIncomingInfoAt (shd s) q) u"
       unfolding InvGlobalRecordCount_def
-      by (smt holds.elims(2) zcount_union)
+      by (auto dest: spec[of _ q])
     from assms(1)[unfolded InvGlobalIncomingInfoUpright_def] have "upright (GlobalIncomingInfoAt (shd s) q)"
       by simp
     with * obtain v where **: "v \<le> u" "zcount (GlobalIncomingInfoAt (shd s) q) v < 0"
       by (meson dual_order.strict_iff_order upright_def supported_def)
     with assms(2) have "zcount (c_records (shd s)) v < 0"
-      apply (simp add: InvGlobalRecordCount_def)
-      apply (smt globvut order_trans uleqt zcount_union)
-      done
+      by (metis (no_types, hide_lams) InvGlobalRecordCount_def add.right_neutral dual_order.trans globvut holds.elims(2) uleqt zcount_union)
     with assms(3) show "False"
       using atLeastatMost_empty by auto
   qed
@@ -439,7 +447,7 @@ lemma beta_upright_0: "beta_upright 0 vb"
   by auto
 
 definition PositiveImplies where
-  "PositiveImplies v w \<equiv> \<forall>t. zcount v t > 0 \<longrightarrow> zcount w t > 0"
+  "PositiveImplies v w = (\<forall>t. zcount v t > 0 \<longrightarrow> zcount w t > 0)"
 
 lemma betaupright_PositiveImplies: "upright (va + vb) \<Longrightarrow> PositiveImplies va (va + vb) \<Longrightarrow> beta_upright va vb"
   unfolding beta_upright_def PositiveImplies_def
@@ -474,21 +482,30 @@ proof -
     then have False
     proof (cases "zcount va x < 0")
       case True
-      with assms(2,3) s x show ?thesis
-        by (smt not_less order.strict_implies_order order_trans upright_def supported_def vacant_upto_def zcount_union)
+      with assms(2,3) s x(1,3) show ?thesis
+        unfolding vacant_upto_def
+        apply clarsimp
+        apply (erule upright_obtain_support[of vb x])
+        apply (metis add_less_same_cancel2 order.trans order.strict_implies_order)
+        apply (metis add_less_same_cancel1 add_neg_neg order.order_iff_strict order.trans less_irrefl)
+        done
     next
       case False
       with assms s x have "x \<le> t" "zcount va x > 0"
          apply -
          apply simp
-        apply (smt add_diff_cancel_left' less_le_trans order.strict_implies_order vacant_upto_def zcount_diff)
+        apply (metis (no_types, hide_lams) add.left_neutral dual_order.order_iff_strict dual_order.trans vacant_upto_def zcount_union)
         done
-      with assms s x show ?thesis
+      with assms(2,3) s x show ?thesis
         by force
     qed
   }
-  with assms show ?thesis
-    by (smt dual_order.strict_implies_order order_trans upright_obtain_support vacant_upto_def zcount_union)
+  note r = this
+  from assms(2,3) show ?thesis
+    unfolding vacant_upto_def
+    apply clarsimp
+    apply (metis (no_types, hide_lams) r add_cancel_right_left order.order_iff_strict order.trans le_less_linear less_add_same_cancel2 upright_obtain_support)
+    done
 qed
 
 lemma beta_upright_add:
@@ -534,22 +551,24 @@ proof -
 qed
 
 definition InfoAt where
-  "InfoAt c k p q \<equiv> if 0 \<le> k \<and> k < length (c_msg c p q) then (c_msg c p q) ! k else 0"
+  "InfoAt c k p q = (if 0 \<le> k \<and> k < length (c_msg c p q) then (c_msg c p q) ! k else 0)"
 
 definition InvInfoAtBetaUpright where
-  "InvInfoAtBetaUpright c \<equiv> (\<forall>k p q. beta_upright (InfoAt c k p q) (IncomingInfo c (k+1) p q))"
+  "InvInfoAtBetaUpright c = (\<forall>k p q. beta_upright (InfoAt c k p q) (IncomingInfo c (k+1) p q))"
 
 lemma init_InvInfoAtBetaUpright: "init_config c \<Longrightarrow> InvInfoAtBetaUpright c"
   unfolding init_config_def InvInfoAtBetaUpright_def beta_upright_def IncomingInfo_def InfoAt_def
   by simp
 
-lemma next_inv[consumes 1, case_names next_performop next_sendupd next_recvupd]:
+lemma next_inv[consumes 1, case_names next_performop next_sendupd next_recvupd stutter]:
   assumes "next s"
   and     "next_performop s \<Longrightarrow> P"
   and     "next_sendupd s \<Longrightarrow> P"
   and     "next_recvupd s \<Longrightarrow> P"
+  and     "shd (stl s) = shd s \<Longrightarrow> P"
   shows   "P"
   using assms unfolding next_def by blast
+
 
 lemma next_InvInfoAtBetaUpright:
   assumes a1: "next s"
@@ -688,7 +707,7 @@ next
         by simp
     qed
     done
-qed
+qed simp
 
 lemma alw_InvInfoAtBetaUpright_aux: "alw (holds InvTempUpright) s \<Longrightarrow> alw (holds InvIncomingInfoUpright) s \<Longrightarrow> holds InvInfoAtBetaUpright s \<Longrightarrow> alw next s \<Longrightarrow> alw (holds InvInfoAtBetaUpright) s"
   by (coinduction arbitrary: s rule: alw.coinduct) (auto intro!: next_InvInfoAtBetaUpright)
@@ -697,7 +716,7 @@ lemma alw_InvInfoAtBetaUpright: "spec s \<Longrightarrow> alw (holds InvInfoAtBe
   by (simp add: alw_InvTempUpright alw_InvIncomingInfoUpright alw_InvInfoAtBetaUpright_aux init_InvInfoAtBetaUpright spec_def)
 
 definition InvGlobalInfoAtBetaUpright where
-  "InvGlobalInfoAtBetaUpright c \<equiv> (\<forall>k p q. beta_upright (InfoAt c k p q) (GlobalIncomingInfo c (k+1) p q))"
+  "InvGlobalInfoAtBetaUpright c = (\<forall>k p q. beta_upright (InfoAt c k p q) (GlobalIncomingInfo c (k+1) p q))"
 
 lemma finite_induct_select [consumes 1, case_names empty select]:
   assumes "finite S"
@@ -790,7 +809,7 @@ lemma alw_InvGlobalInfoAtBetaUpright: "spec s \<Longrightarrow> alw (holds InvGl
   by (meson alw_InvGlobalIncomingInfoUpright alw_InvIncomingInfoUpright alw_InvInfoAtBetaUpright alw_iff_sdrop invs_imp_InvGlobalInfoAtBetaUpright)
 
 definition SafeStickyGlobVacantUpto :: "('p :: finite, 't :: order) computation \<Rightarrow> bool" where
-  "SafeStickyGlobVacantUpto s \<equiv> \<forall>q t. GlobVacantUpto (shd s) q t \<longrightarrow> alw (holds (\<lambda>c. GlobVacantUpto c q t)) s"
+  "SafeStickyGlobVacantUpto s = (\<forall>q t. GlobVacantUpto (shd s) q t \<longrightarrow> alw (holds (\<lambda>c. GlobVacantUpto c q t)) s)"
 
 lemma gvut1:
   "GlobVacantUpto (shd s) q t \<Longrightarrow> next_performop s \<Longrightarrow> GlobVacantUpto (shd (stl s)) q t"
@@ -840,8 +859,8 @@ proof -
       by (simp add: vacant_upto_def)
     from bukGII1 uGII1 have "vacant_upto ?\<kappa> t"
       by (rule betaupright_upright_vut[of ?\<kappa> ?GII1]) (metis vuGII0 add.commute sumGIIsk)
-    then have "GlobVacantUpto (shd (stl s)) q t"
-      by (smt globk gvu vacant_upto_def zcount_union)
+    with gvu have "GlobVacantUpto (shd (stl s)) q t"
+      by (simp add: globk vacant_upto_def)
   }
   then show ?thesis
     using assms unfolding next_recvupd'_def
@@ -850,12 +869,12 @@ qed
 
 lemma spec_imp_SafeStickyGlobVacantUpto_aux:
   assumes
-   "alw (holds (\<lambda>c. InvGlobVacantUptoImpliesNrec c)) s" and
-   "alw (holds (\<lambda>c. InvGlobalRecordCount c)) s" and
-   "alw (holds (\<lambda>c. InvGlobalIncomingInfoUpright c)) s" and
-   "alw (holds (\<lambda>c. InvGlobalInfoAtBetaUpright c)) s" and
-   "alw next s"
- shows "alw SafeStickyGlobVacantUpto s"
+    "alw (holds (\<lambda>c. InvGlobVacantUptoImpliesNrec c)) s" and
+    "alw (holds (\<lambda>c. InvGlobalRecordCount c)) s" and
+    "alw (holds (\<lambda>c. InvGlobalIncomingInfoUpright c)) s" and
+    "alw (holds (\<lambda>c. InvGlobalInfoAtBetaUpright c)) s" and
+    "alw next s"
+  shows "alw SafeStickyGlobVacantUpto s"
   using assms apply (coinduction arbitrary: s)
   subgoal for s
     unfolding spec_def next_def SafeStickyGlobVacantUpto_def Let_def
@@ -872,13 +891,13 @@ lemma spec_imp_SafeStickyGlobVacantUpto_aux:
       assume a2: "alw (holds InvGlobalRecordCount) sb"
       assume a3: "alw (holds InvGlobalIncomingInfoUpright) sb"
       assume a4: "alw (holds InvGlobalInfoAtBetaUpright) sb"
-      assume a5: "alw (\<lambda>s. next_performop s \<or> next_sendupd s \<or> next_recvupd s) sb"
+      assume a5: "alw (\<lambda>s. next_performop s \<or> next_sendupd s \<or> next_recvupd s \<or> shd (stl s) = shd s) sb"
       assume a6: "GlobVacantUpto (shd sb) q t"
-      have "next_performop sb \<or> next_sendupd sb \<or> next_recvupd sb"
+      have "next_performop sb \<or> next_sendupd sb \<or> next_recvupd sb \<or> shd (stl sb) = shd sb"
         using a5 by blast
       then have "GlobVacantUpto (shd (stl sb)) q t"
         using a6 a4 a3 a2 a1 by (metis (no_types) alwD gvut1 gvut2 gvut3 holds.elims(2))
-      then show "alw (holds InvGlobalRecordCount) (stl sb) \<and> alw (holds InvGlobalIncomingInfoUpright) (stl sb) \<and> alw (holds InvGlobalInfoAtBetaUpright) (stl sb) \<and> alw (\<lambda>s. next_performop s \<or> next_sendupd s \<or> next_recvupd s) (stl sb) \<and> GlobVacantUpto (shd (stl sb)) q t"
+      then show "alw (holds InvGlobalRecordCount) (stl sb) \<and> alw (holds InvGlobalIncomingInfoUpright) (stl sb) \<and> alw (holds InvGlobalInfoAtBetaUpright) (stl sb) \<and> alw (\<lambda>s. next_performop s \<or> next_sendupd s \<or> next_recvupd s \<or> shd (stl s) = shd s) (stl sb) \<and> GlobVacantUpto (shd (stl sb)) q t"
         using a5 a4 a3 a2 by blast
     qed
     apply blast

@@ -533,9 +533,8 @@ lemma next_preserves_inv_imps_work_sum:
   by (simp, cases rule: next'_inv)
 
 lemma spec_imp_iiws: "spec s \<Longrightarrow> alw (holds inv_imps_work_sum) s"
-  unfolding spec_def
-  by (smt alw_invar alw_mono holds.elims(2) holds.elims(3) init_imp_inv_imps_work_sum next_preserves_inv_imps_work_sum)
-
+  using init_imp_inv_imps_work_sum next_preserves_inv_imps_work_sum
+  by (auto intro: alw_invar simp: alw_mono spec_def)
 
 subsection\<open>Invariant: inv_imp_plus_work_nonneg\<close>
 
@@ -600,14 +599,14 @@ lemma next_preserves_inv_implications_nonneg:
     p_preserves_inv_implications_nonneg
   by (simp, cases rule: next'_inv)
 
-lemma alw_inv_implications_nonneg:
-  assumes "spec s"
-  shows   "alw (holds inv_implications_nonneg) s"
-  using assms apply -
-  apply (drule spec_imp_iipwn)
-  using assms unfolding spec_def
-  apply clarsimp
-  by (smt alw_iff_sdrop alw_invar next_preserves_inv_implications_nonneg holds.elims(3) init_imp_inv_implications_nonneg next'_inv)
+lemma alw_inv_implications_nonneg: "spec s \<Longrightarrow> alw (holds inv_implications_nonneg) s"
+  apply (frule spec_imp_iipwn)
+  unfolding spec_def
+  apply (rule alw_invar)
+  using init_imp_inv_implications_nonneg apply auto []
+  using next_preserves_inv_implications_nonneg
+  apply (metis (no_types, lifting) alw_iff_sdrop)
+  done
 
 lemma after_summary_Diff: "after_summary (M - N) S = after_summary M S - after_summary N S"
   by (simp add: sum_subtractf after_summary_def)
@@ -633,7 +632,7 @@ proof -
     by (rule union_frontiers_nonneg)
   with assms(2) show ?thesis
     using assms(1)[unfolded inv_imps_work_sum_def, THEN spec, of loc]
-    by (smt zcount_union)
+    by fastforce
 qed
 
 lemma obtain_elem_frontier:
@@ -804,10 +803,12 @@ proof -
   then obtain t' where t': "t' \<in>\<^sub>A frontier (c_imp c loc1)" "t = results_in t' (sum_path_weights xs)"
           "(\<forall>k<length xs. (\<exists>t. t \<in>\<^sub>A frontier (c_imp c (TO (xs ! k))) \<and> t = results_in t' (sum_path_weights (take (k+1) xs))))"
     by (auto simp add: longestImpWitnessPath_def impWitnessPath_def)
-  then have cases: "0 > zcount (c_work c loc1) t' \<or>
+  from t'(1) have cases: "0 > zcount (c_work c loc1) t' \<or>
              (t' \<in>#\<^sub>z (zmset_frontier (c_pts c loc1) + union_frontiers c loc1))"
-    using assms(2) apply (simp add: inv_imps_work_sum_def)
-    by (smt all_eq_sum_eq add_diff_cancel_right' member_frontier_pos_zmset zcount_diff zcount_inI)
+    using assms(2)
+    apply (clarsimp intro!: verit_forall_inst(6) simp: inv_imps_work_sum_def not_less)
+    apply (metis add_pos_nonneg mem_zmset_frontier member_frontier_pos_zmset obtain_frontier_elem zcount_empty zcount_ne_zero_iff zcount_union zmset_frontier_empty)
+    done
   then show ?thesis
   proof cases
     assume case1: "0 > zcount (c_work c loc1) t'"
@@ -818,7 +819,7 @@ proof -
     have "(t' \<in>#\<^sub>z (zmset_frontier (c_pts c loc1) + union_frontiers c loc1))"
       using case2 cases by auto
     then have case_split2: "(t' \<in>#\<^sub>z zmset_frontier (c_pts c loc1)) \<or> (t' \<in>#\<^sub>z union_frontiers c loc1)"
-      using union_frontiers_nonneg by (smt add_diff_cancel_right' zcount_diff zcount_ne_zero_iff)
+      by (metis (no_types, lifting) add_diff_cancel_left' in_diff_zcount zcount_ne_zero_iff)
     then show ?thesis
     proof cases
       assume case2_1: "t' \<in>#\<^sub>z zmset_frontier (c_pts c loc1)"
@@ -884,16 +885,14 @@ proof -
           apply clarify
           subgoal for i
             apply (cases "i=0")
-             apply auto []
             subgoal
+              using path_first_loc[OF path_xs]
+              by force
+            subgoal
+              apply (rule exI[of _ i])
               using path_xs
-              apply -
-              apply (drule path_first_loc)
-                apply force+
+              apply (auto dest: path_to_eq_from[of _ _ xs "i-1"])
               done
-            apply (rule exI[of _ i])
-            using path_xs
-             apply (auto dest: path_to_eq_from[of _ _ xs "i-1"])
             done
           done
         have "results_in t0 (sum_path_weights (take (k+1) ?xs')) \<in>\<^sub>A frontier (c_imp c loc0)"
@@ -1651,12 +1650,14 @@ lemma after_summary_zmset_frontier:
 lemma frontier_eqI: "\<forall>b. 0 \<le> zcount A b \<Longrightarrow> \<forall>b. 0 \<le> zcount B b \<Longrightarrow>
   A \<subseteq>#\<^sub>z B \<Longrightarrow> (\<And>b. b \<in>#\<^sub>z B \<Longrightarrow> \<exists>a. a \<in>#\<^sub>z A \<and> a \<le> b) \<Longrightarrow> frontier A = frontier B"
   apply (transfer fixing: A B)
-   apply (auto simp: minimal_antichain_def subseteq_zmset_def)
+  apply (clarsimp simp: minimal_antichain_def subseteq_zmset_def)
+  apply safe
      apply (metis less_le_trans)
     apply (metis less_le less_le_trans zcount_ne_zero_iff)
    apply (metis antisym less_le zcount_ne_zero_iff)
   apply (meson less_le_trans)
   done
+
 lemma implied_frontier_implied_frontier_alt: "implied_frontier (c_pts c) loc = implied_frontier_alt c loc"
   unfolding implied_frontier_alt_def implied_frontier_def
   apply (rule frontier_eqI[symmetric])
@@ -1681,7 +1682,7 @@ lemma implied_frontier_implied_frontier_alt: "implied_frontier (c_pts c) loc = i
        apply (rule exI[of _ loc])
        apply (subst sum_nonneg_eq_0_iff; simp)
        apply (rule bexI[of _ s])
-       apply auto [2]
+       apply auto
       done
     done
   done

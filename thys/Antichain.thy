@@ -34,7 +34,8 @@ lemma in_minimal_antichain: "x \<in> minimal_antichain A \<longleftrightarrow> x
   unfolding minimal_antichain_def by auto
 
 lemma in_antichain_minimal_antichain[simp]: "finite M \<Longrightarrow> x \<in>\<^sub>A antichain (minimal_antichain M) \<longleftrightarrow> x \<in> minimal_antichain M"
-  apply (auto simp: minimal_antichain_def member_antichain.rep_eq)
+  apply (clarsimp simp: minimal_antichain_def member_antichain.rep_eq)
+  apply (intro conjI iffI)
     apply (subst (asm) antichain_inverse)
      apply (simp add: incomparable_def)
     apply simp
@@ -130,7 +131,6 @@ lemma ac_notin_Diff: "\<not> x \<in>\<^sub>A A - B \<Longrightarrow> \<not> x \<
 lemma ac_eq_iff: "A = B \<longleftrightarrow> (\<forall>x. x \<in>\<^sub>A A \<longleftrightarrow> x \<in>\<^sub>A B)"
   by transfer auto
 
-
 lemma antichain_obtain_foundation:
   assumes   "t \<in>\<^sub>A M"
   obtains s where "s \<in>\<^sub>A M \<and> s \<le> t \<and> (\<forall>u. u\<in>\<^sub>AM \<longrightarrow> \<not> u < s)"
@@ -142,6 +142,5 @@ lemma set_antichain1[simp]: "x \<in> set_antichain X \<Longrightarrow> x \<in>\<
 
 lemma set_antichain2[simp]: "x \<in>\<^sub>A X \<Longrightarrow> x \<in> set_antichain X"
   by transfer simp
-
 
 end

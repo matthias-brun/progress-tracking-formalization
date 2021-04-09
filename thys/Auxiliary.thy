@@ -58,8 +58,9 @@ lemma minus_Collect_conv_Not: "- Collect P = Collect (Not \<circ> P)"
 
 lemma finite_distinct_bounded: "finite A \<Longrightarrow> finite {xs. distinct xs \<and> set xs \<subseteq> A}"
   apply (rule finite_subset[of _ "\<Union>n \<in> {0 .. card A}. {xs.  length xs = n \<and> distinct xs \<and> set xs \<subseteq> A}"])
-   apply auto
-  by (metis card_mono distinct_card)
+  subgoal by clarsimp (metis card_mono distinct_card)
+  subgoal by auto
+  done
 
 lemma GreatestI2_ex_nat:
   "\<lbrakk> \<exists>k::nat. P k;  \<forall>y. P y \<longrightarrow> y \<le> b;  \<And>x. P x \<Longrightarrow> \<forall>y. P y \<longrightarrow> y \<le> x \<Longrightarrow> Q x\<rbrakk> \<Longrightarrow> Q (Greatest P)"
@@ -79,8 +80,8 @@ proof (induct xs)
   case (Cons a xs)
   show ?case
     apply (cases "xs = []")
-     apply auto []
-    apply (metis Cons(1,3-) in_set_conv_nth insert_Diff insert_Diff_single insert_iff list.sel(1) list.set_sel(1) list.simps(15) nth_mem)
+    subgoal by auto
+    subgoal by (metis Cons(1,3-) in_set_conv_nth insert_Diff insert_Diff_single insert_iff list.sel(1) list.set_sel(1) list.simps(15) nth_mem)
     done
 qed simp
 
@@ -170,9 +171,10 @@ lemma (in order) order_finite_set_exists_foundation:
   shows   "\<exists>s\<in>M. s \<le> t \<and> (\<forall>u\<in>M. \<not> u < s)"
   using assms
   apply (induct M arbitrary: t rule: finite_induct)
-   apply simp
-  apply auto
-    apply (meson less_le_not_le order_trans)
+   apply blast
+  apply clarsimp
+  apply safe
+     apply (meson less_le_not_le order_trans)
    apply (meson less_le_not_le order_trans)
   apply (meson order.strict_implies_order order.strict_trans)
   done
@@ -383,9 +385,14 @@ lemma in_mset_neg_in_zmset: "x \<in># mset_neg M \<Longrightarrow> x \<in>#\<^su
 lemma set_zmset_eq_set_mset_union: "set_zmset M = set_mset (mset_pos M) \<union> set_mset (mset_neg M)"
   by (auto dest: in_mset_pos_in_zmset in_mset_neg_in_zmset)
 
+lemma member_mset_pos_iff_zcount: "x \<in># mset_pos M \<longleftrightarrow> 0 < zcount M x"
+  using not_in_iff pos_zcount_in_zmset by force
+
+lemma member_mset_neg_iff_zcount: "x \<in># mset_neg M \<longleftrightarrow> zcount M x < 0"
+  by (metis member_mset_pos_iff_zcount mset_pos_uminus neg_le_0_iff_le not_le zcount_uminus)
+
 lemma mset_pos_mset_neg_disjoint[simp]: "set_mset (mset_pos \<Delta>) \<inter> set_mset (mset_neg \<Delta>) = {}"
-  apply safe
-  by (smt count_mset_neg count_mset_pos nat_le_0 not_in_iff)
+  by (auto simp: member_mset_pos_iff_zcount member_mset_neg_iff_zcount)
 
 lemma zcount_sum: "zcount (\<Sum>M\<in>MM. f M) t = (\<Sum>M\<in>MM. zcount (f M) t)"
   by (induct MM rule: infinite_finite_induct) auto
@@ -544,8 +551,7 @@ lemma zcount_image_zmset:
       have "(\<Sum>x\<in>f -` {x} \<inter> (set_mset Mp \<union> set_mset Mn - {x. count Mp x = count Mn x}). int (count Mp x) - int (count Mn x))
         = (\<Sum>x\<in>f -` {x} \<inter> (set_mset Mp \<union> set_mset Mn). int (count Mp x) - int (count Mn x))"
         (is "?S = _")
-        by (subst sum.same_carrier[where C="f -` {x} \<inter> (set_mset Mp \<union> set_mset Mn)"])
-          auto
+        by (subst sum.same_carrier[where C="f -` {x} \<inter> (set_mset Mp \<union> set_mset Mn)"]) auto
       ultimately show "?S1 - ?S2 = ?S"
         by (auto simp: sum_subtractf)
     qed

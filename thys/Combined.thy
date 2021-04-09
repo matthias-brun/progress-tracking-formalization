@@ -29,19 +29,19 @@ proof (rule ccontr)
   fix loc1 t1 loc2 t2
   assume as: "\<not> (x <\<^sub>p y \<longrightarrow> \<not> y <\<^sub>p x)" "x = (loc1, t1)" "y = (loc2, t2)"
   then have as1: "loc1 \<noteq> loc2"
-    using cri_less_def
-    by (smt add.right_neutral cri_less_eq_def dataflow_topology_axioms dual_order.antisym
-        flow.path_weight_conv_path zero_le less_le_not_le flow.path_weight_refl prod.simps(2) results_in_zero)
+    unfolding cri_less_def cri_less_eq_def
+    by clarsimp
+      (metis add.right_neutral order.antisym order.trans le_plus(2) results_in_mono(2) results_in_zero)
   from as obtain s1 where s1: "s1 \<in>\<^sub>A path_summary loc1 loc2"
     "results_in t1 s1 \<le> t2"
-    using cri_less_def cri_less_eq_def by (smt prod.simps(2))
+    using cri_less_def cri_less_eq_def by auto
   then obtain path1 where path1: "flow.path loc1 loc2 path1"
     "s1 = flow.sum_path_weights path1"
     "path1 \<noteq> []"
     using as1 flow.path_weight_conv_path flow.path0E by blast
   from as obtain s2 where s2: "s2 \<in>\<^sub>A path_summary loc2 loc1"
     "results_in t2 s2 \<le> t1"
-    using cri_less_def cri_less_eq_def by (smt prod.simps(2))
+    using cri_less_def cri_less_eq_def by auto
   then obtain path2 where path2: "flow.path loc2 loc1 path2"
     "s2 = flow.sum_path_weights path2"
     "path2 \<noteq> []"
@@ -73,9 +73,9 @@ sublocale cri: order cri_less_eq cri_less
     fix a b aa ba ab bb
     assume as: "x \<le>\<^sub>p y" "y \<le>\<^sub>p z" "x = (a, b)" "y = (aa, ba)" "z = (ab, bb)"
     then obtain s1 where s1: "s1 \<in>\<^sub>A path_summary a aa" "results_in b s1 \<le> ba"
-      using cri_less_eq_def by (smt old.prod.case)
+      using cri_less_eq_def by auto
     from as(2,4,5) obtain s2 where s2: "s2 \<in>\<^sub>A path_summary aa ab" "results_in ba s2 \<le> bb"
-      using cri_less_eq_def by (smt old.prod.case)
+      using cri_less_eq_def by auto
     with s1 obtain s3 where s3: "s3 \<in>\<^sub>A path_summary a ab" "s3 \<le> followed_by s1 s2"
       using flow.path_weight_elem_trans by blast
     with s1 s2 have "results_in b s3 \<le> bb"
@@ -201,7 +201,7 @@ abbreviation NextPropagate where
   "NextPropagate c0 c1 \<equiv> \<exists>p. NextPropagate' c0 c1 p"
 
 definition "Next'" where
-  "Next' c0 c1 = (NextPerformOp c0 c1 \<or> NextSendUpd c0 c1 \<or> NextRecvUpd c0 c1 \<or> NextPropagate c0 c1 \<or> NextRecvCap c0 c1)"
+  "Next' c0 c1 = (NextPerformOp c0 c1 \<or> NextSendUpd c0 c1 \<or> NextRecvUpd c0 c1 \<or> NextPropagate c0 c1 \<or> NextRecvCap c0 c1 \<or> c1 = c0)"
 
 abbreviation "Next" where
   "Next s \<equiv> Next' (shd s) (shd (stl s))"
@@ -388,11 +388,10 @@ proof -
         by (metis (mono_tags, lifting) count_filter_zmset zcount_ne_zero_iff)
       with *** have "\<forall>y. (y \<in> set_zmset \<Delta> = (y \<in> (set_zmset \<Delta>2 \<union> {x})))" by blast
       then have "set_zmset \<Delta> = set_zmset \<Delta>2 \<union> {x}" by (auto simp add: set_eq_iff)
-      with insert (3,4)  show ?thesis
-        by (smt * Diff_insert_absorb Un_Diff_cancel Un_insert_right insert.hyps(2) insert_Diff_if
-            insert_absorb insert_is_Un sup_bot.right_neutral)
+      with insert(2,3,4) *  show ?thesis
+        by (metis (mono_tags, lifting) Diff_insert Diff_insert2 Diff_insert_absorb Un_empty_right Un_insert_right)
     qed
-    with final and  insert show ?case by smt
+    with final insert show ?case by metis
   qed
 qed
 
@@ -893,6 +892,7 @@ lemma Next'_preserves_invs:
     subgoal
       unfolding inv_init_imp_prop_safe_def
       using NextRecvCapD(2,3) by fastforce
+    subgoal by simp
     done
   subgoal
     using assms(4) unfolding Next'_def
@@ -909,6 +909,7 @@ lemma Next'_preserves_invs:
     subgoal
       unfolding inv_init_imp_prop_safe_def
       using NextRecvCapD(2,3) by fastforce
+    subgoal by simp
     done
   subgoal
     using assms(4) unfolding Next'_def
@@ -926,6 +927,7 @@ lemma Next'_preserves_invs:
       by (metis option.inject)
     subgoal
       by (metis InvGlobPointstampsEq_def NextRecvCapD(1) NextRecvCapD(2) cri.next_recvcapD(4))
+    subgoal by simp
     done
   done
 
@@ -948,11 +950,13 @@ lemma alw_Next'_alw_invs:
   shows   "alw (holds all_invs) s"
   using assms
   apply (coinduction arbitrary: s)
-  apply auto
-  apply (metis (mono_tags, lifting) alw_holds2 Next'_preserves_invs(3) alwD)
-  apply (metis (mono_tags, lifting) alw_holds2 Next'_preserves_invs(1) alwD)
-  apply (metis (mono_tags, lifting) alw_holds2 Next'_preserves_invs(2) alwD)
-  apply (metis (mono_tags, lifting) alw_holds2 Next'_preserves_invs(2) alwD)
+  apply clarsimp
+  apply safe
+       apply (metis (mono_tags, lifting) alw_holds2 Next'_preserves_invs(3) alwD)
+      apply (metis (mono_tags, lifting) alw_holds2 Next'_preserves_invs(1) alwD)
+     apply (metis (mono_tags, lifting) alw_holds2 Next'_preserves_invs(2) alwD)
+    apply (metis (mono_tags, lifting) alw_holds2 Next'_preserves_invs(2) alwD)
+   apply auto
   done
 
 lemma alw_invs: "FullSpec s \<Longrightarrow> alw (holds all_invs) s"
@@ -1134,6 +1138,7 @@ lemma next_imp_propagate_next:
     apply (auto simp add: NextRecvUpd'_def next'_def)
     done
   subgoal by (rule NextPropagate'_next')
+  subgoal by (auto simp: next'_def)
   subgoal by (auto simp: next'_def)
   done
 
