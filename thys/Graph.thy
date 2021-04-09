@@ -1,7 +1,7 @@
 section\<open>Multigraphs with partially ordered weights\<close>
 
 theory Graph
-imports "HOL-Library.Sublist" Antichain
+  imports "HOL-Library.Sublist" Antichain
 begin
 
 abbreviation (input) FROM where
@@ -36,7 +36,7 @@ inductive_cases path_AppendE: "path l1 l3 (xs @ [(l2,s,l2')])"
 
 lemma path_trans: "path l1 l2 xs \<Longrightarrow> path l2 l3 ys \<Longrightarrow> path l1 l3 (xs @ ys)"
   by (rotate_tac, induct l2 l3 ys rule: path.induct)
-     (auto intro: path.path simp flip: append_assoc)
+    (auto intro: path.path simp flip: append_assoc)
 
 lemma path_take_from: "path l1 l2 xs \<Longrightarrow> m < length xs \<Longrightarrow> FROM (xs ! m) = l2' \<Longrightarrow> path l1 l2' (take m xs)"
 proof (induct l1 l2 xs rule: path.induct)
@@ -55,7 +55,7 @@ proof (induct l1 l2 xs rule: path.induct)
   case (path l1 l2 xs lbl l3)
   then show ?case
     apply (cases "m < length xs")
-    apply (simp add: nth_append)
+     apply (simp add: nth_append)
     apply clarsimp
     apply (metis case_prod_conv less_antisym nth_append_length path.path)
     done
@@ -221,7 +221,7 @@ lemma sum_path_weights_append_singleton:
   "sum_path_weights (xs @ [(l,x,l')]) = sum_path_weights xs + x"
   by (induct xs) (simp_all add: add.assoc)
 
-lemma aux:
+lemma path_weightp_ex_path:
   "path_weightp l1 l2 s \<Longrightarrow> \<exists>xs.
   (let s' = sum_path_weights xs in s' \<le> s \<and> path_weightp l1 l2 s' \<and> distinct xs \<and>
   (\<forall>(l1,s,l2) \<in> set xs. s \<in>\<^sub>A weights l1 l2))"
@@ -247,7 +247,7 @@ lemma finite_summaries: "finite {xs. distinct xs \<and> (\<forall>(l1, s, l2) \<
 lemma finite_minimal_antichain_path_weightp:
   "finite (minimal_antichain {x. path_weightp l1 l2 x})"
   apply (rule finite_surj[OF finite_summaries, where f = sum_path_weights])
-  apply (clarsimp simp: minimal_antichain_def image_iff dest!: aux)
+  apply (clarsimp simp: minimal_antichain_def image_iff dest!: path_weightp_ex_path)
   apply (fastforce simp: Let_def)
   done
 

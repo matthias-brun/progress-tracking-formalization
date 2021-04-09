@@ -338,7 +338,7 @@ lemma lift_invariant_to_spec:
   apply (coinduction arbitrary: s)
   apply clarsimp
   apply (intro conjI assms(1))
-  apply safe
+   apply safe
   subgoal
   proof -
     fix sa :: "('b, 'a) configuration stream"
@@ -428,7 +428,7 @@ proof -
     apply simp
     apply (subst add_diff_eq[symmetric])
     apply (subst sum_if_distrib_add)
-    apply (simp_all add: algebra_simps zmset_of_plus)
+      apply (simp_all add: algebra_simps zmset_of_plus)
     done
   show "IncomingInfo c1 k p' q = (if p' = p
       then IncomingInfo c0 k p' q + (timestamps (zmset_of \<Delta>mint_msg) + zmset_of \<Delta>mint_self - zmset_of \<Delta>neg)
@@ -532,10 +532,10 @@ proof -
   show "GlobalIncomingInfoAt c1 q' = (if q' = q then GlobalIncomingInfoAt c0 q' - hd (c_msg c0 p q) else GlobalIncomingInfoAt c0 q')"
     unfolding GlobalIncomingInfo_def
     apply (cases "q'=q")
-    apply simp
-    apply (subst diff_conv_add_uminus)
-    apply (intro Sum_eq_pick_changed_elem[where m = p])
-       apply (simp_all add: ii)
+     apply simp
+     apply (subst diff_conv_add_uminus)
+     apply (intro Sum_eq_pick_changed_elem[where m = p])
+        apply (simp_all add: ii)
     done
   show "InfoAt c1 k p q = InfoAt c0 (k+1) p q"
     unfolding InfoAt_def change
@@ -778,7 +778,7 @@ lemma justified_sum:
   shows   "justified (\<Sum>p\<in>P. f p) (\<Sum>p\<in>P. g p)"
   using assms
   by (induct P rule: infinite_finite_induct)
-     (auto intro!: justified_add sum_nonneg simp: zcount_sum)
+    (auto intro!: justified_add sum_nonneg simp: zcount_sum)
 
 lemma justified_add_records:
   assumes "justified C M"
@@ -831,7 +831,7 @@ proof (intro justified_leastI allI impI)
       subgoal for t' s
         apply (rule exI[of _ s])
         apply (intro conjI)
-         apply auto [2]
+          apply auto [2]
         apply (intro allI impI)
         subgoal for s'
           using assms(2)[rule_format, of s']
@@ -869,7 +869,7 @@ proof (intro justified_leastI allI impI)
           unfolding supported_strong_def
           apply (elim exE conjE)
           subgoal for s'
-          apply (intro disjI1 exI[of _ s'])
+            apply (intro disjI1 exI[of _ s'])
             using s(1,2) apply (auto intro: exI[of _ s'] simp: nonpos_upto_def)
             done
           done
@@ -931,7 +931,7 @@ proof (intro allI impI justified_leastI)
         done
       then show ?thesis
         apply (cases "\<exists>s'\<le>s. zcount (timestamps (zmset_of \<Delta>)) s' > 0")
-        apply (elim exE conjE)
+         apply (elim exE conjE)
         subgoal for s'
           apply (drule pos_image_zmset_obtain_pre[rotated])
            apply simp
@@ -957,7 +957,7 @@ proof (intro allI impI justified_leastI)
   }
   then show "supported_strong (M + timestamps (zmset_of \<Delta>)) t \<or> (\<exists>t'<t. 0 < zcount C t') \<or> zcount (M + timestamps (zmset_of \<Delta>)) t < zcount C t"
     apply (cases "zcount (timestamps (zmset_of \<Delta>)) t \<le> 0")
-    apply blast
+     apply blast
     apply (rule \<Delta>t)
     apply auto
     done
@@ -1284,7 +1284,8 @@ lemma justified_with_sum':
     and   "\<forall>x\<in>X. justified (C x) (N x)"
     and   "\<forall>x\<in>X. \<forall>t. 0 \<le> zcount (C x) t"
   shows   "justified_with (\<Sum>x\<in>X. C x) M (\<Sum>x\<in>X. N x)"
-  using assms proof (induct X rule: finite_induct)
+  using assms
+proof (induct X rule: finite_induct)
   case empty
   then show ?case by simp
 next
@@ -1458,7 +1459,7 @@ proof (intro allI impI)
     case 4
     then show ?thesis
       apply (cases "zcount (timestamps (zmset_of \<Delta>)) t > 0")
-      apply (auto dest: pos_image_zmset_obtain_pre[rotated] assms(2)[unfolded minting_msg_def, rule_format]) []
+       apply (auto dest: pos_image_zmset_obtain_pre[rotated] assms(2)[unfolded minting_msg_def, rule_format]) []
       unfolding not_less apply auto
       done
   qed
@@ -1838,12 +1839,12 @@ proof -
       apply (drule zero_lt_diff)
        apply simp
       apply (drule zero_lt_add_disj)
-      apply simp
+        apply simp
        apply simp
       apply (erule disjE)
       subgoal
         apply (drule pos_image_zmset_obtain_pre[rotated])
-        apply (auto dest!: change(4)[unfolded minting_msg_def, rule_format] pos_caps_pos_records[OF assms(4)] less_imp_le)
+         apply (auto dest!: change(4)[unfolded minting_msg_def, rule_format] pos_caps_pos_records[OF assms(4)] less_imp_le)
         done
       subgoal
         by (auto dest!: change(3)[unfolded minting_self_def, rule_format] pos_caps_pos_records[OF assms(4)])
@@ -1869,7 +1870,7 @@ proof -
     apply clarify
     apply (rule ccontr)
     apply (rule r)
-       apply auto
+     apply auto
     done
 qed
 
@@ -2087,29 +2088,47 @@ proof -
           apply (simp only: if_P zcount_union zcount_diff)
           apply (subst complex_change(4)[of t])
           using assms(3)[unfolded InvCapsNonneg_def, rule_format]
-          apply (simp add: order_class.antisym)
+           apply (simp add: order_class.antisym)
           apply simp
           done
       qed
     next \<comment> \<open>Adding \<Delta> made M positive at t in c1\<close>
       case 2
-        { assume nosupp: "\<not> supported_strong ?M1 t"
-          assume "\<forall>t'<t. \<not> 0 < zcount (c_caps c1 p) t'"
-          then have nocaps: "\<forall>t'<t. zcount (c_caps c1 p) t' = 0"
-            using InvCapsNonneg_def assms(2) assms(3) order_class.le_less performop_preserves_InvCapsNonneg by fastforce
-          assume "\<not> zcount ?M1 t < zcount (c_caps c1 p) t"
-          then have caps_le: "zcount (c_caps c1 p) t \<le> zcount ?M1 t"
-            by linarith
-          from 2 have "count \<Delta>neg t < zcount ?\<Delta>pos t"
-            by auto
-          then have "0 < count \<Delta>mint_self t \<or> 0 < zcount (timestamps (zmset_of \<Delta>mint_msg)) t"
-            by (metis 2(2) add.commute add.left_neutral not_gr_zero of_nat_0 zero_lt_diff zcount_diff zcount_of_mset zcount_union zcount_zmset_of_nonneg)
-          then obtain s where s: "s \<le> t" "0 < zcount (c_caps c0 p) s" "\<forall>s'<s. zcount (c_caps c0 p) s' = 0"
-            apply atomize_elim
-            apply (elim disjE)
-            subgoal
+      { assume nosupp: "\<not> supported_strong ?M1 t"
+        assume "\<forall>t'<t. \<not> 0 < zcount (c_caps c1 p) t'"
+        then have nocaps: "\<forall>t'<t. zcount (c_caps c1 p) t' = 0"
+          using InvCapsNonneg_def assms(2) assms(3) order_class.le_less performop_preserves_InvCapsNonneg by fastforce
+        assume "\<not> zcount ?M1 t < zcount (c_caps c1 p) t"
+        then have caps_le: "zcount (c_caps c1 p) t \<le> zcount ?M1 t"
+          by linarith
+        from 2 have "count \<Delta>neg t < zcount ?\<Delta>pos t"
+          by auto
+        then have "0 < count \<Delta>mint_self t \<or> 0 < zcount (timestamps (zmset_of \<Delta>mint_msg)) t"
+          by (metis 2(2) add.commute add.left_neutral not_gr_zero of_nat_0 zero_lt_diff zcount_diff zcount_of_mset zcount_union zcount_zmset_of_nonneg)
+        then obtain s where s: "s \<le> t" "0 < zcount (c_caps c0 p) s" "\<forall>s'<s. zcount (c_caps c0 p) s' = 0"
+          apply atomize_elim
+          apply (elim disjE)
+          subgoal
+            apply simp
+            apply (drule change(3)[unfolded minting_self_def, rule_format])
+            apply (elim exE conjE)
+            apply (drule order_zmset_exists_foundation)
+            apply clarsimp
+            subgoal for s' u
+              apply (rule exI[of _ u])
+              apply clarsimp
+              using assms(3)[unfolded InvCapsNonneg_def, rule_format]
+              apply (metis local.dual_order.trans order_class.order.not_eq_order_implies_strict)
+              done
+            done
+          subgoal
+            apply (drule pos_image_zmset_obtain_pre[rotated])
+             apply simp
+            apply clarify
+            subgoal for p'
               apply simp
-              apply (drule change(3)[unfolded minting_self_def, rule_format])
+              apply (drule change(4)[unfolded minting_msg_def, rule_format])
+              apply simp
               apply (elim exE conjE)
               apply (drule order_zmset_exists_foundation)
               apply clarsimp
@@ -2117,110 +2136,92 @@ proof -
                 apply (rule exI[of _ u])
                 apply clarsimp
                 using assms(3)[unfolded InvCapsNonneg_def, rule_format]
-                apply (metis local.dual_order.trans order_class.order.not_eq_order_implies_strict)
+                apply (metis local.dual_order.strict_trans2 local.less_imp_le order_class.order.not_eq_order_implies_strict)
                 done
               done
+            done
+          done
+        have \<Delta>counts:
+          "\<And>s. s < t \<Longrightarrow> count \<Delta>neg s = zcount (c_caps c0 p) s"
+          "\<And>s. s < t \<Longrightarrow> count \<Delta>mint_self s = 0"
+          "\<And>p s'. s' \<le> s \<Longrightarrow> count \<Delta>mint_msg (p,s') = 0"
+          subgoal for s'
+            using change(2) nocaps s(1) order_class.order.not_eq_order_implies_strict
+            by (fastforce simp: change(9))
+          subgoal for s'
+            using nocaps[rule_format, of s']
+            by (simp add: change(9) \<open>\<And>s'. s' < t \<Longrightarrow> int (count \<Delta>neg s') = zcount (c_caps c0 p) s'\<close>)
+          subgoal for p s'
+            using change(4)[unfolded minting_msg_def, rule_format, of "(p,s')"] s(3)
+            by (force intro: ccontr)
+          done
+        { assume less: "s < t"
+          have caps_le_ii0: "zcount (c_caps c0 p) s \<le> zcount M s"
+          proof (rule ccontr)
+            assume nle: "\<not> zcount (c_caps c0 p) s \<le> zcount M s"
+            have "zcount ?M1 s < 0"
+              unfolding complex_change(3)
+              using complex_change(4) nle s(3) by (auto simp: \<Delta>counts(1,2)[OF less])
+            then show False
+              using less least dual_order.strict_trans2
+              by (force dest!: nosupp[unfolded supported_strong_def, simplified, rule_format] simp: nonpos_upto_def)
+          qed
+          with s(2) have count0s: "0 < zcount M s"
+            by auto
+          have False
+            using inv0[OF count0s]
+            apply (elim disj3_split)
             subgoal
-              apply (drule pos_image_zmset_obtain_pre[rotated])
-               apply simp
-              apply clarify
-              subgoal for p'
-                apply simp
-                apply (drule change(4)[unfolded minting_msg_def, rule_format])
-                apply simp
-                apply (elim exE conjE)
-                apply (drule order_zmset_exists_foundation)
-                apply clarsimp
-                subgoal for s' u
-                  apply (rule exI[of _ u])
-                  apply clarsimp
-                  using assms(3)[unfolded InvCapsNonneg_def, rule_format]
-                  apply (metis local.dual_order.strict_trans2 local.less_imp_le order_class.order.not_eq_order_implies_strict)
+            proof -
+              assume "supported_strong M s"
+              then obtain u where u: "u < s" "zcount M u < 0"
+                unfolding supported_strong_def
+                by blast
+              have "0 \<le> zcount ?M1 u"
+                using least nosupp[unfolded supported_strong_def nonpos_upto_def, simplified, rule_format, of u] dual_order.strict_trans[OF less u(1)]
+                by fastforce
+              then have "0 < zcount ?\<Delta>pos u"
+                using \<Delta>counts(1)[of u] s(3) u(1) u(2) less by force
+              then have "0 < count \<Delta>mint_self u \<or> 0 < zcount (timestamps (zmset_of \<Delta>mint_msg)) u"
+                using gr0I by fastforce
+              then obtain u' where "u' \<le> u" "0 < zcount (c_caps c0 p) u'"
+                apply atomize_elim
+                apply (elim disjE)
+                subgoal
+                  apply simp
+                  apply (drule change(3)[unfolded minting_self_def, rule_format])
+                  using s(1) s(2) apply blast
+                  done
+                subgoal
+                  apply (drule pos_image_zmset_obtain_pre[rotated])
+                   apply simp
+                  apply clarify
+                  subgoal for p'
+                    apply simp
+                    apply (drule change(4)[unfolded minting_msg_def, rule_format])
+                    using local.order.strict_iff_order apply auto
+                    done
                   done
                 done
-              done
-            done
-          have \<Delta>counts:
-            "\<And>s. s < t \<Longrightarrow> count \<Delta>neg s = zcount (c_caps c0 p) s"
-            "\<And>s. s < t \<Longrightarrow> count \<Delta>mint_self s = 0"
-            "\<And>p s'. s' \<le> s \<Longrightarrow> count \<Delta>mint_msg (p,s') = 0"
-            subgoal for s'
-              using change(2) nocaps s(1) order_class.order.not_eq_order_implies_strict
-              by (fastforce simp: change(9))
-            subgoal for s'
-              using nocaps[rule_format, of s']
-              by (simp add: change(9) \<open>\<And>s'. s' < t \<Longrightarrow> int (count \<Delta>neg s') = zcount (c_caps c0 p) s'\<close>)
-            subgoal for p s'
-              using change(4)[unfolded minting_msg_def, rule_format, of "(p,s')"] s(3)
-              by (force intro: ccontr)
-            done
-          { assume less: "s < t"
-            have caps_le_ii0: "zcount (c_caps c0 p) s \<le> zcount M s"
-            proof (rule ccontr)
-              assume nle: "\<not> zcount (c_caps c0 p) s \<le> zcount M s"
-              have "zcount ?M1 s < 0"
-                unfolding complex_change(3)
-                using complex_change(4) nle s(3) by (auto simp: \<Delta>counts(1,2)[OF less])
               then show False
-                using less least dual_order.strict_trans2
-                by (force dest!: nosupp[unfolded supported_strong_def, simplified, rule_format] simp: nonpos_upto_def)
+                using s(3) u(1) by auto
             qed
-            with s(2) have count0s: "0 < zcount M s"
-              by auto
-            have False
-              using inv0[OF count0s]
-              apply (elim disj3_split)
-              subgoal
-              proof -
-                assume "supported_strong M s"
-                then obtain u where u: "u < s" "zcount M u < 0"
-                  unfolding supported_strong_def
-                  by blast
-                have "0 \<le> zcount ?M1 u"
-                  using least nosupp[unfolded supported_strong_def nonpos_upto_def, simplified, rule_format, of u] dual_order.strict_trans[OF less u(1)]
-                  by fastforce
-                then have "0 < zcount ?\<Delta>pos u"
-                  using \<Delta>counts(1)[of u] s(3) u(1) u(2) less by force
-                then have "0 < count \<Delta>mint_self u \<or> 0 < zcount (timestamps (zmset_of \<Delta>mint_msg)) u"
-                  using gr0I by fastforce
-                then obtain u' where "u' \<le> u" "0 < zcount (c_caps c0 p) u'"
-                  apply atomize_elim
-                  apply (elim disjE)
-                  subgoal
-                    apply simp
-                    apply (drule change(3)[unfolded minting_self_def, rule_format])
-                    using s(1) s(2) apply blast
-                    done
-                  subgoal
-                    apply (drule pos_image_zmset_obtain_pre[rotated])
-                     apply simp
-                    apply clarify
-                    subgoal for p'
-                      apply simp
-                      apply (drule change(4)[unfolded minting_msg_def, rule_format])
-                      using local.order.strict_iff_order apply auto
-                      done
-                    done
-                  done
-                then show False
-                  using s(3) u(1) by auto
-              qed
-              using s(3) apply auto []
-              using caps_le_ii0 apply linarith
-              done
-          }
-          moreover
-          { assume eq: "s = t"
-            have count0t: "0 < zcount M t"
-              using eq caps_le change(9) complex_change(3,4) s(2,3) by auto
-            have False
-              using 2(1) count0t by auto
-          }
-          ultimately have False
-            using local.order.not_eq_order_implies_strict s(1) by blast
+            using s(3) apply auto []
+            using caps_le_ii0 apply linarith
+            done
         }
-        then show ?thesis
-          by blast
+        moreover
+        { assume eq: "s = t"
+          have count0t: "0 < zcount M t"
+            using eq caps_le change(9) complex_change(3,4) s(2,3) by auto
+          have False
+            using 2(1) count0t by auto
+        }
+        ultimately have False
+          using local.order.not_eq_order_implies_strict s(1) by blast
+      }
+      then show ?thesis
+        by blast
     qed
   }
   then show "justified (c_caps c1 p) ?M1"
@@ -2258,8 +2259,8 @@ lemma performop_preserves_InvJustifiedII:
       unfolding next_performop_complexD[OF assms(2)]
       apply (simp only: if_P)
       apply (rule next_performop'_preserves_justified[
-        OF assms(1)[unfolded InvJustifiedII_def, rule_format, of p k q],
-        OF assms(2,3)])
+            OF assms(1)[unfolded InvJustifiedII_def, rule_format, of p k q],
+            OF assms(2,3)])
       done
     subgoal
       unfolding
@@ -2405,8 +2406,8 @@ lemma performop_preserves_InvTempJustified:
       unfolding next_performopD(5)[OF assms(2)] fun_upd_apply
       apply (simp only: if_P)
       apply (rule next_performop'_preserves_justified[
-        OF assms(1)[unfolded InvTempJustified_def, rule_format, of p],
-        OF assms(2,3)])
+            OF assms(1)[unfolded InvTempJustified_def, rule_format, of p],
+            OF assms(2,3)])
       done
     subgoal
       unfolding
@@ -2467,23 +2468,23 @@ lemma invs_imp_InvGlobNonposImpRecordsNonpos:
       \<comment> \<open>u is pointstamp that violates InvGlobNonposImpRecordsNonpos\<close>
     with assms(2) have u: "0 < zcount (records c) u"
       by linarith
-      \<comment> \<open>u' is the least pointstamp with positive nrec\<close>
+        \<comment> \<open>u' is the least pointstamp with positive nrec\<close>
     with uleqt obtain u' where u': "0 < zcount (records c) u'" "\<forall>u. 0 < zcount (records c) u \<longrightarrow> \<not> u < u'" "u' \<le> t"
       using order_zmset_exists_foundation[OF u] by auto
-      \<comment> \<open>from the nrec count we know that GII also has positive count\<close>
+        \<comment> \<open>from the nrec count we know that GII also has positive count\<close>
     from u'(1,3) assms(2) gvu have pos_gii: "0 < zcount ?GII u'"
       unfolding InvRecordCount_def
       by (metis add_diff_cancel_left' diff_eq_eq less_add_same_cancel1 order_class.order.strict_trans1 zcount_diff)
-      \<comment> \<open>Case distinction on which part of the partition GII's u is in\<close>
+        \<comment> \<open>Case distinction on which part of the partition GII's u is in\<close>
     { \<comment> \<open>Original proof from Abadi paper, change is justified by uprightness\<close>
       assume "supported_strong ?GII u'"
         \<comment> \<open>uprightness gives us a lesser pointstamp with negative count in GII..\<close>
       then obtain v where v: "v \<le> u'" "zcount ?GII v < 0"
         using order.strict_implies_order supported_strong_def by blast
-        \<comment> \<open>..which is also negative in nrec..\<close>
+          \<comment> \<open>..which is also negative in nrec..\<close>
       with u'(3) v(1) assms(2) have "zcount (records c) v < 0"
         by (metis (no_types, hide_lams) InvRecordCount_def add.commute gvu less_add_same_cancel2 dual_order.trans not_le order_class.dual_order.strict_trans1 zcount_union)
-        \<comment> \<open>..contradicting InvNrecNonneg\<close>
+          \<comment> \<open>..contradicting InvNrecNonneg\<close>
       with assms(3) have "False"
         unfolding InvRecordsNonneg_def
         using order_class.leD by blast
@@ -2494,7 +2495,7 @@ lemma invs_imp_InvGlobNonposImpRecordsNonpos:
         \<comment> \<open>v is a strictly lesser positive count in nrec..\<close>
       then obtain v where v: "v < u'" "0 < zcount (records c) v"
         by auto
-        \<comment> \<open>..which contradicts the fact that we obtained u' as the least, positive pointstamp in nrec\<close>
+          \<comment> \<open>..which contradicts the fact that we obtained u' as the least, positive pointstamp in nrec\<close>
       with u'(2) have "False"
         by auto
     }
@@ -2599,7 +2600,7 @@ proof -
         \<comment> \<open>Hence GII must be positive at s\<close>
     have gii: "zcount (GlobalIncomingInfoAt c q) s > 0"
       using count[of q] s(2) norec[of s, simplified]
-       by (metis add.commute less_add_same_cancel1 zcount_union)
+      by (metis add.commute less_add_same_cancel1 zcount_union)
         \<comment> \<open>which means it must be justified by one of these three disjuncts\<close>
     then consider
       "supported_strong (GlobalIncomingInfoAt c q) s" |
@@ -2903,7 +2904,7 @@ proof (rule ccontr)
   then consider
     "\<exists>s<t'. zcount (InfoAt c0 0 p q) s < 0 \<and> (\<forall>s'<s. zcount (InfoAt c0 0 p q) s' \<le> 0)" |
     "\<exists>s<t'. zcount (GlobalIncomingInfo c0 1 p q) s < 0 \<and> (\<forall>s'<s. zcount (InfoAt c0 0 p q) s' \<le> 0)"
-          "\<nexists>s. s < t' \<and> zcount (InfoAt c0 0 p q) s < 0 \<and> (\<forall>s'<s. zcount (InfoAt c0 0 p q) s' \<le> 0)" |
+    "\<nexists>s. s < t' \<and> zcount (InfoAt c0 0 p q) s < 0 \<and> (\<forall>s'<s. zcount (InfoAt c0 0 p q) s' \<le> 0)" |
     "\<exists>s<t'. 0 < zcount (records c0) s" |
     "zcount (InfoAt c0 0 p q + GlobalIncomingInfo c0 1 p q) t' < zcount (records c0) t'"
     by atomize_elim auto
@@ -2945,7 +2946,7 @@ proof (rule ccontr)
       apply (metis add.right_neutral preorder_class.less_irrefl recordcount)
       done
     then show False
-    by (simp add: t'(3))
+      by (simp add: t'(3))
   qed
 qed
 
@@ -3010,12 +3011,12 @@ lemma invs_imp_InvMsgInGlob:
       apply simp
   subgoal
     apply (rule invs_imp_InvGlobNonposEqVacant)
-       apply (drule (2) recvupd_preserves_InvRecordCount)
-      apply (drule (1) recvupd_preserves_InvJustifiedII)
-      apply (rule InvJustifiedII_implies_InvJustifiedGII)
-       apply simp
-      apply (drule (2) recvupd_preserves_InvCapsNonneg)
-     apply (simp add: InvRecordsNonneg_def next_recvupd_complexD)
+      apply (drule (2) recvupd_preserves_InvRecordCount)
+     apply (drule (1) recvupd_preserves_InvJustifiedII)
+     apply (rule InvJustifiedII_implies_InvJustifiedGII)
+      apply simp
+     apply (drule (2) recvupd_preserves_InvCapsNonneg)
+    apply (simp add: InvRecordsNonneg_def next_recvupd_complexD)
     done
     apply simp
    apply simp
@@ -3118,11 +3119,11 @@ proof (rule ccontr)
       apply (metis list.exhaust_sel list.sel(2) set_ConsD)
      apply (subst Min_gr_iff)
        apply (auto simp: in_set_conv_nth nth_tl) [2]
-    apply clarsimp
+     apply clarsimp
      apply (subst Min_less_iff)
        apply (auto simp: in_set_conv_nth nth_tl) []
       apply (clarsimp simp: in_set_conv_nth nth_tl)
-    apply (metis (no_types, hide_lams) Suc_less_eq Suc_pred hd_conv_nth list.size(3) not_gr_zero not_less_zero)
+      apply (metis (no_types, hide_lams) Suc_less_eq Suc_pred hd_conv_nth list.size(3) not_gr_zero not_less_zero)
      apply (clarsimp simp: in_set_conv_nth nth_tl)
     subgoal for s x
       by (rule exI[of _ "x-1"])

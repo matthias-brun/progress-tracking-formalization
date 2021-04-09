@@ -174,7 +174,7 @@ lemma (in order) order_finite_set_exists_foundation:
    apply blast
   apply clarsimp
   apply safe
-     apply (meson less_le_not_le order_trans)
+    apply (meson less_le_not_le order_trans)
    apply (meson less_le_not_le order_trans)
   apply (meson order.strict_implies_order order.strict_trans)
   done
@@ -209,7 +209,8 @@ lemma multiset_sum_diff:
     and   "M \<subseteq># (\<Sum>x\<in>X. f x)"
     and   "M \<subseteq># f y"
   shows "(\<Sum>x\<in>X. f x) - M = (\<Sum>x\<in>X. if x = y then f y - M else f x)"
-using assms proof (induct X rule: infinite_finite_induct)
+  using assms
+proof (induct X rule: infinite_finite_induct)
   case (insert x F)
   show ?case
     apply (cases "x=y")
@@ -224,7 +225,7 @@ using assms proof (induct X rule: infinite_finite_induct)
        apply simp
       apply (subst union_left_cancel)
       apply (rule insert(3))
-      apply auto
+        apply auto
       done
     done
 qed simp_all
@@ -299,7 +300,7 @@ lemma zcount_union_subseteq: "{t. 0 < zcount (A+B) t} \<subseteq> {t. 0 < zcount
 lemma finite_zcount_pos[simp]: "finite {t. zcount M t > 0}"
   apply transfer
   subgoal for M
-  apply (rule finite_subset[OF _ finite_Un[THEN iffD2, OF conjI[OF finite_nonzero_count finite_nonzero_count]], of _ "fst M" "snd M"])
+    apply (rule finite_subset[OF _ finite_Un[THEN iffD2, OF conjI[OF finite_nonzero_count finite_nonzero_count]], of _ "fst M" "snd M"])
     apply (auto simp only: set_mset_def fst_conv snd_conv split: prod.splits)
     done
   done
@@ -307,7 +308,7 @@ lemma finite_zcount_pos[simp]: "finite {t. zcount M t > 0}"
 lemma finite_zcount_neg[simp]: "finite {t. zcount M t < 0}"
   apply transfer
   subgoal for M
-  apply (rule finite_subset[OF _ finite_Un[THEN iffD2, OF conjI[OF finite_nonzero_count finite_nonzero_count]], of _ "fst M" "snd M"])
+    apply (rule finite_subset[OF _ finite_Un[THEN iffD2, OF conjI[OF finite_nonzero_count finite_nonzero_count]], of _ "fst M" "snd M"])
     apply (auto simp only: set_mset_def fst_conv snd_conv split: prod.splits)
     done
   done
@@ -411,7 +412,7 @@ lemma neg_filter_zmset_neg_zmset[simp]: "0 > zcount (filter_zmset P M) x \<Longr
 
 
 lift_definition update_zmultiset :: "'t zmultiset \<Rightarrow> 't \<Rightarrow> int \<Rightarrow> 't zmultiset" is
-"\<lambda>(A,B) T D.(if D>0 then (A + replicate_mset (nat D) T, B)
+  "\<lambda>(A,B) T D.(if D>0 then (A + replicate_mset (nat D) T, B)
                     else (A,B + replicate_mset (nat (-D)) T))"
   by (auto simp: equiv_zmset_def if_split)
 
@@ -524,11 +525,11 @@ lemma pos_zcount_image_zmset[simp]: "(\<And>t. 0 \<le> zcount M t) \<Longrightar
   done
 
 lemma set_zmset_transfer[transfer_rule]:
-   "(rel_fun (pcr_zmultiset (=)) (rel_set (=)))
+  "(rel_fun (pcr_zmultiset (=)) (rel_set (=)))
    (\<lambda>(Mp, Mn). set_mset Mp \<union> set_mset Mn - {x. count Mp x = count Mn x}) set_zmset"
   by (auto simp: rel_fun_def pcr_zmultiset_def cr_zmultiset_def
-    rel_set_eq multiset.rel_eq set_zmset_def zcount.abs_eq count_eq_zero_iff[symmetric]
-    simp del: zcount_ne_zero_iff)
+      rel_set_eq multiset.rel_eq set_zmset_def zcount.abs_eq count_eq_zero_iff[symmetric]
+      simp del: zcount_ne_zero_iff)
 
 lemma zcount_image_zmset:
   "zcount (image_zmset f M) x = (\<Sum>y \<in> f -` {x} \<inter> set_zmset M. zcount M y)"
@@ -622,7 +623,7 @@ lemma alw_holds_smap_conv_comp: "alw (holds P) (smap f s) = alw (\<lambda>s. (P 
 
 lemma alw_relates: "alw (relates P) s \<longleftrightarrow> P (shd s) (shd (stl s)) \<and> alw (relates P) (stl s)"
   apply (rule iffI)
-  apply (auto simp: relates_def dest: alwD) []
+   apply (auto simp: relates_def dest: alwD) []
   apply (coinduction arbitrary: s)
   apply (auto simp: relates_def)
   done
@@ -636,51 +637,5 @@ no_notation IMPL (infix "imp" 60)
 notation AND  (infixr "aand" 70)
 notation OR   (infixr "or" 65)
 notation IMPL (infixr "imp" 60)
-
-section\<open>Syntax bug workaround\<close>
-
-(* temporary fix for incorrect zmset comprehension syntax *)
-no_translations
- "{#x \<in>#\<^sub>z M. P#}" \<rightharpoonup> "CONST filter_zmset (\<lambda>x. P) M"
-no_syntax (ASCII)
- "_MCollect" :: "pttrn \<Rightarrow> 'a zmultiset \<Rightarrow> bool \<Rightarrow> 'a zmultiset" ("(1{#_ :#z _./ _#})")
-no_syntax
- "_MCollect" :: "pttrn \<Rightarrow> 'a zmultiset \<Rightarrow> bool \<Rightarrow> 'a zmultiset" ("(1{#_ \<in>#\<^sub>z _./ _#})")
-
-syntax (ASCII)
- "_ZMCollect" :: "pttrn \<Rightarrow> 'a zmultiset \<Rightarrow> bool \<Rightarrow> 'a zmultiset"    ("(1{#_ :#\<^sub>z _./ _#})")
-syntax
- "_ZMCollect" :: "pttrn \<Rightarrow> 'a zmultiset \<Rightarrow> bool \<Rightarrow> 'a zmultiset"    ("(1{#_ \<in>#\<^sub>z _./ _#})")
-translations
- "{#x \<in>#\<^sub>z M. P#}" \<rightharpoonup> "CONST filter_zmset (\<lambda>x. P) M"
-
-(* temporary fix for incorrect zmset Ball/Bex syntax *)
-no_translations
-  "\<forall>x\<in>#\<^sub>zA. P" \<rightleftharpoons> "CONST Signed_Multiset.Ball A (\<lambda>x. P)"
-  "\<exists>x\<in>#\<^sub>zA. P" \<rightleftharpoons> "CONST Signed_Multiset.Bex A (\<lambda>x. P)"
-no_syntax
-  "_MBall" :: "pttrn \<Rightarrow> 'a set \<Rightarrow> bool \<Rightarrow> bool" ("(3\<forall>_\<in>#\<^sub>z_./ _)" [0, 0, 10] 10)
-  "_MBex" :: "pttrn \<Rightarrow> 'a set \<Rightarrow> bool \<Rightarrow> bool" ("(3\<exists>_\<in>#\<^sub>z_./ _)" [0, 0, 10] 10)
-no_syntax (ASCII)
-  "_MBall" :: "pttrn \<Rightarrow> 'a set \<Rightarrow> bool \<Rightarrow> bool" ("(3\<forall>_:#\<^sub>z_./ _)" [0, 0, 10] 10)
-  "_MBex" :: "pttrn \<Rightarrow> 'a set \<Rightarrow> bool \<Rightarrow> bool" ("(3\<exists>_:#\<^sub>z_./ _)" [0, 0, 10] 10)
-
-syntax
-  "_ZMBall" :: "pttrn \<Rightarrow> 'a set \<Rightarrow> bool \<Rightarrow> bool" ("(3\<forall>_\<in>#\<^sub>z_./ _)" [0, 0, 10] 10)
-  "_ZMBex" :: "pttrn \<Rightarrow> 'a set \<Rightarrow> bool \<Rightarrow> bool" ("(3\<exists>_\<in>#\<^sub>z_./ _)" [0, 0, 10] 10)
-syntax (ASCII)
-  "_ZMBall" :: "pttrn \<Rightarrow> 'a set \<Rightarrow> bool \<Rightarrow> bool" ("(3\<forall>_:#\<^sub>z_./ _)" [0, 0, 10] 10)
-  "_ZMBex" :: "pttrn \<Rightarrow> 'a set \<Rightarrow> bool \<Rightarrow> bool" ("(3\<exists>_:#\<^sub>z_./ _)" [0, 0, 10] 10)
-translations
-  "\<forall>x\<in>#\<^sub>zA. P" \<rightleftharpoons> "CONST Signed_Multiset.Ball A (\<lambda>x. P)"
-  "\<exists>x\<in>#\<^sub>zA. P" \<rightleftharpoons> "CONST Signed_Multiset.Bex A (\<lambda>x. P)"
-
-(* Syntax for zmset comprehensions *)
-syntax (ASCII)
-  "_comprehension_zmset'" :: "'a \<Rightarrow> 'b \<Rightarrow> 'b zmultiset \<Rightarrow> bool \<Rightarrow> 'a zmultiset"  ("({#_/ | _ :#z _./ _#})")
-syntax
-  "_comprehension_zmset'" :: "'a \<Rightarrow> 'b \<Rightarrow> 'b zmultiset \<Rightarrow> bool \<Rightarrow> 'a zmultiset"  ("({#_/ | _ \<in>#\<^sub>z _./ _#})")
-translations
-  "{#e | x\<in>#\<^sub>zM. P#}" \<rightharpoonup> "{#e. x \<in>#\<^sub>z {# x\<in>#\<^sub>zM. P#}#}"
 
 end

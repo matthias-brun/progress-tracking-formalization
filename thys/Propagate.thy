@@ -13,7 +13,7 @@ type_synonym ('loc, 't) computation = "('loc, 't) configuration stream"
 locale dataflow_topology = flow?: graph summary
   for summary :: "'loc \<Rightarrow> 'loc :: finite \<Rightarrow> 'sum :: {order, monoid_add} antichain" +
   fixes results_in :: "'t :: order \<Rightarrow> 'sum \<Rightarrow> 't"
-assumes results_in_zero: "results_in t 0 = t"
+  assumes results_in_zero: "results_in t 0 = t"
     and results_in_mono_raw: "t1 \<le> t2 \<Longrightarrow> s1 \<le> s2 \<Longrightarrow> results_in t1 s1 \<le> results_in t2 s2"
     and followed_by_summary: "results_in (results_in t s1) s2 = results_in t (s1 + s2)"
     and no_zero_cycle: "path loc loc xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> s = sum_path_weights xs \<Longrightarrow> t < results_in t s"
@@ -127,7 +127,7 @@ proof -
     by (auto simp: next_change_multiplicity'_def intro!: configuration.equality)
   then show ?thesis
     by (rule ex1I[of _ ?c'])
-       (auto  simp: next_change_multiplicity'_def intro!: configuration.equality)
+      (auto  simp: next_change_multiplicity'_def intro!: configuration.equality)
 qed
 
 lemma frontier_change_zmset_frontier:
@@ -696,7 +696,7 @@ lemma pos_zcount_union_frontiers:
     \<le> zcount (union_frontiers c l2) (results_in t s)"
   apply (subst zcount_sum)
   apply (rule member_le_sum)
-   apply (auto intro!: pos_zcount_image_zmset)
+    apply (auto intro!: pos_zcount_image_zmset)
   done
 
 lemma after_summary_Sum_fun: "finite MM \<Longrightarrow> after_summary (\<Sum>M\<in>MM. f M) A = (\<Sum>M\<in>MM. after_summary (f M) A)"
@@ -715,7 +715,7 @@ lemma after_summary_obtain_pre:
     apply (subst ex_comm)
     apply (rule exI[of _ s])
     apply (drule pos_image_zmset_obtain_pre[rotated])
-    apply simp
+     apply simp
     apply (simp add: member_antichain.rep_eq)
     done
   done
@@ -724,7 +724,7 @@ lemma empty_antichain[dest]: "x \<in>\<^sub>A antichain {} \<Longrightarrow> Fal
   by (metis empty_antichain.abs_eq mem_antichain_nonempty)
 
 definition impWitnessPath where
-"impWitnessPath c loc1 loc2 xs t = (
+  "impWitnessPath c loc1 loc2 xs t = (
     path loc1 loc2 xs \<and>
     distinct xs \<and>
     (\<exists>t'. t' \<in>\<^sub>A frontier (c_imp c loc1) \<and> t = results_in t' (sum_path_weights xs) \<and>
@@ -744,7 +744,7 @@ proof -
 qed
 
 definition longestImpWitnessPath where
-"longestImpWitnessPath  c loc1 loc2 xs t = (
+  "longestImpWitnessPath  c loc1 loc2 xs t = (
   impWitnessPath c loc1 loc2 xs t \<and>
   (\<forall>loc' xs'. impWitnessPath c loc' loc2 xs' t \<longrightarrow> length (xs') \<le> length (xs)))"
 
@@ -773,7 +773,7 @@ proof -
     assume p:  "p \<in> paths"
     then show "(length \<circ> snd) p < card {(loc1,s,loc2). s \<in>\<^sub>A summary loc1 loc2} + 1"
       by (auto simp: paths_def impWitnessPath_def less_Suc_eq_le finite_edges path_edge
-        dest!: distinct_card[symmetric] intro!: card_mono)
+          dest!: distinct_card[symmetric] intro!: card_mono)
   qed
   from ex_has_greatest_nat[OF \<open>p \<in> paths\<close> this] show ?thesis
     by (auto simp: paths_def longestImpWitnessPath_def)
@@ -794,14 +794,14 @@ qed
 
 lemma find_witness_from_frontier:
   assumes "t \<in>\<^sub>A frontier (c_imp c loc2)"
-      and "inv_imps_work_sum c"
-    shows "\<exists>t' loc1 xs. (path loc1 loc2 xs \<and> t =  results_in t' (sum_path_weights xs) \<and>
+    and "inv_imps_work_sum c"
+  shows "\<exists>t' loc1 xs. (path loc1 loc2 xs \<and> t =  results_in t' (sum_path_weights xs) \<and>
            (t' \<in>\<^sub>A frontier (c_pts c loc1) \<or> 0 > zcount (c_work c loc1) t'))"
 proof -
   obtain loc1 xs where longestP: "longestImpWitnessPath c loc1 loc2 xs t"
     using assms(1) longestImpWitnessPathEx by blast
   then obtain t' where t': "t' \<in>\<^sub>A frontier (c_imp c loc1)" "t = results_in t' (sum_path_weights xs)"
-          "(\<forall>k<length xs. (\<exists>t. t \<in>\<^sub>A frontier (c_imp c (TO (xs ! k))) \<and> t = results_in t' (sum_path_weights (take (k+1) xs))))"
+    "(\<forall>k<length xs. (\<exists>t. t \<in>\<^sub>A frontier (c_imp c (TO (xs ! k))) \<and> t = results_in t' (sum_path_weights (take (k+1) xs))))"
     by (auto simp add: longestImpWitnessPath_def impWitnessPath_def)
   from t'(1) have cases: "0 > zcount (c_work c loc1) t' \<or>
              (t' \<in>#\<^sub>z (zmset_frontier (c_pts c loc1) + union_frontiers c loc1))"
@@ -831,18 +831,18 @@ proof -
       assume "\<not>t' \<in>#\<^sub>z zmset_frontier (c_pts c loc1)"
       then have case2_2: "t' \<in>#\<^sub>z  union_frontiers c loc1" using case_split2 by blast
       then obtain loc0 t0 s0 where loc0 : "t0 \<in>\<^sub>A frontier (c_imp c loc0)"
-                                          "s0 \<in>\<^sub>A (summary loc0 loc1)"
-                                          "t' = results_in t0 s0"
+        "s0 \<in>\<^sub>A (summary loc0 loc1)"
+        "t' = results_in t0 s0"
         by (fastforce simp: after_summary_def set_zmset_def zcount_sum
-          member_antichain.rep_eq[symmetric] zcount_image_zmset card_gt_0_iff
-          simp del: zcount_ne_zero_iff
-          elim!: sum.not_neutral_contains_not_neutral)
+            member_antichain.rep_eq[symmetric] zcount_image_zmset card_gt_0_iff
+            simp del: zcount_ne_zero_iff
+            elim!: sum.not_neutral_contains_not_neutral)
       let ?xs' = "(loc0, s0, loc1) # xs"
       have path_xs: "path loc1 loc2 xs"
         using impWitnessPath_def longestImpWitnessPath_def longestP by blast
       have is_path_xs': "path loc0 loc2 ?xs'" using longestP
-          apply (simp add: longestImpWitnessPath_def impWitnessPath_def)
-          by (metis append_Cons append_Nil path_singleton path_trans loc0(2))
+        apply (simp add: longestImpWitnessPath_def impWitnessPath_def)
+        by (metis append_Cons append_Nil path_singleton path_trans loc0(2))
       have "\<forall>k<length ?xs'.
               results_in t0 (sum_path_weights (take (k+1) ?xs'))
               \<in>\<^sub>A frontier (c_imp c (TO (?xs' ! k)))"
@@ -1040,7 +1040,7 @@ next
       from u have "0 < zcount (union_frontiers c loc3) (results_in u s)"
         apply (subst zcount_sum)
         apply (rule sum_pos[where y=loc2])
-        apply simp_all [3]
+           apply simp_all [3]
         apply (clarsimp simp: after_summary_def)
         apply (subst zcount_sum)
         apply (rule sum_pos[where y=s])
@@ -1049,7 +1049,7 @@ next
         apply simp
         apply (subst card_eq_sum)
         apply (rule sum_pos[where y=u])
-        apply simp_all
+           apply simp_all
         done
       then have "0 < zcount (zmset_frontier (c_pts c loc3)) (results_in u s) + zcount (union_frontiers c loc3) (results_in u s)"
         by (auto intro: add_nonneg_pos)
@@ -1079,7 +1079,7 @@ lemma loc_imps_fw_M_nonneg[simp]:
   shows "0 \<le> zcount M t"
   using assms
   by (induct arbitrary: t rule: loc_imps_fw.induct)
-     (auto intro!: add_nonneg_nonneg sum_nonneg simp: zcount_image_zmset assms(2)[unfolded inv_implications_nonneg_def])
+    (auto intro!: add_nonneg_nonneg sum_nonneg simp: zcount_image_zmset assms(2)[unfolded inv_implications_nonneg_def])
 
 lemma loc_imps_fw_implication_in_M:
   assumes "inv_imps_work_sum c"
@@ -1172,11 +1172,11 @@ proof -
     then obtain u' where u': "u' \<in>\<^sub>A frontier (c_pts c1 loc1)" "u' \<le> u"
       using obtain_frontier_elem by blast
     assume path_sum: "s \<in>\<^sub>A path_summary loc1 loc2"
-    \<comment> \<open>CM state changes:\<close>
+      \<comment> \<open>CM state changes:\<close>
     assume n_neq_zero: "n \<noteq> 0"
     assume impl: "\<exists>t'. t' \<in>\<^sub>A frontier (c_imp c0 loc) \<and> t' \<le> t"
     assume pointstamps:
-           "\<forall>loc'. c_pts c1 loc' =
+      "\<forall>loc'. c_pts c1 loc' =
                     (if loc' = loc then update_zmultiset (c_pts c0 loc') t n
                                    else c_pts c0 loc')"
     have "\<exists>t'\<le>results_in u s. t' \<in>\<^sub>A frontier (c_imp c1 loc2)"
@@ -1466,7 +1466,7 @@ proof -
         \<Longrightarrow> \<exists>t'\<le>results_in t s. t' \<in>\<^sub>A frontier (c_imp c loc2)" for loc1 loc2 t s
     by (rule inv_safe[OF assms(1,2), unfolded inv_safe_def, rule_format])
       (auto elim: worklists_vacant_to_trans[OF assms(3)])
-  \<comment> \<open>Pointstamp b in the implied_frontier_alt is caused by a pointstamp a and summary s
+      \<comment> \<open>Pointstamp b in the implied_frontier_alt is caused by a pointstamp a and summary s
           and "results_in a s" is least among such pointstamps\<close>
   from assms(4) obtain loc1 a s where loc1_a_s:
     "a \<in>\<^sub>A frontier (c_pts c loc1)" "s \<in>\<^sub>A path_summary loc1 loc2" "results_in a s = b"
@@ -1479,7 +1479,7 @@ proof -
     done
   then have zcount_ps: "0 < zcount (c_pts c loc1) a"
     using member_frontier_pos_zmset by blast
-  \<comment> \<open>From `safe` we know that pointstamp a is reflected in the implications by some
+      \<comment> \<open>From `safe` we know that pointstamp a is reflected in the implications by some
       poinstamp b' \<le> b\<close>
   obtain b' where b': "b' \<in>\<^sub>A frontier (c_imp c loc2)" "b' \<le> results_in a s"
     using safe[OF zcount_ps loc1_a_s(2)] loc1_a_s(3) by blast
@@ -1491,9 +1491,9 @@ proof -
         using b'(2) loc1_a_s(3) that by force
       then show ?thesis
         by (meson assms(3) results_in_mono(2) worklists_vacant_to_def flow.zero_le order_trans
-          path_weight_refl zcount_inI)
+            path_weight_refl zcount_inI)
     qed
-    \<comment> \<open>but the pointstamp can't be strictly less, because we know that "results_in a s" is least\<close>
+      \<comment> \<open>but the pointstamp can't be strictly less, because we know that "results_in a s" is least\<close>
     then obtain a' loc1' s' where a':
       "s' \<in>\<^sub>A path_summary loc1' loc2" "results_in a' s' \<le> b'" "a' \<in>\<^sub>A frontier (c_pts c loc1')"
       using implication_implies_pointstamp[OF b'(1) assms(1), simplified] by force
@@ -1507,7 +1507,7 @@ proof -
     then show ?thesis
       by (rule ccontr)
   qed
-  \<comment> \<open>Hence, the implied_frontier_alt pointstamp b is reflected in the implications\<close>
+    \<comment> \<open>Hence, the implied_frontier_alt pointstamp b is reflected in the implications\<close>
   with b' show "b \<in>\<^sub>A frontier (c_imp c loc2)"
     by (auto simp: loc1_a_s(3))
 qed
@@ -1525,8 +1525,8 @@ proof -
       (auto elim: worklists_vacant_to_trans[OF assms(3)])
   have "zcount (c_work c loc) t = 0" if "results_in t s \<le> b" for t s loc
     using that by (meson assms(3) results_in_mono(2) worklists_vacant_to_def flow.zero_le
-      order_trans path_weight_refl zcount_inI)
-  \<comment> \<open>Pointstamp b in the implications is caused by a pointstamp a and a summary s\<close>
+        order_trans path_weight_refl zcount_inI)
+      \<comment> \<open>Pointstamp b in the implications is caused by a pointstamp a and a summary s\<close>
   then obtain loc1 a s where loc1_a_s:
     "s \<in>\<^sub>A path_summary loc1 loc2" "results_in a s \<le> b" "a \<in>\<^sub>A frontier (c_pts c loc1)"
     using implication_implies_pointstamp[OF assms(4) assms(1), simplified] by force
@@ -1548,9 +1548,9 @@ proof -
     apply (rule sum_pos[of _ _ loc1])
        apply simp
       apply (clarsimp simp: zcount_sum)
-    apply (rule sum_nonneg)
+      apply (rule sum_nonneg)
       apply (subst zcount_image_zmset)
-    apply auto [2]
+      apply auto [2]
     apply (subst zcount_sum)
     apply (rule sum_pos[of _ _ s])
     using loc1_a_s(1) apply simp_all [3]
@@ -1558,14 +1558,14 @@ proof -
     apply (rule sum_pos[of _ _ a])
     using loc1_a_s(3) apply auto
     done
-  \<comment> \<open>..which means a pointstamp b' \<le> results_in a s must exist in the implied_frontier_alt..\<close>
+      \<comment> \<open>..which means a pointstamp b' \<le> results_in a s must exist in the implied_frontier_alt..\<close>
   then obtain b' where b': "b' \<in>\<^sub>A implied_frontier_alt c loc2" "b' \<le> results_in a s"
-     by (auto simp: implied_frontier_alt_def elim: obtain_frontier_elem)
+    by (auto simp: implied_frontier_alt_def elim: obtain_frontier_elem)
   then have "worklists_vacant_to c b'"
-     using loc1_a_s(2) by (auto intro: worklists_vacant_to_trans[OF assms(3)])
+    using loc1_a_s(2) by (auto intro: worklists_vacant_to_trans[OF assms(3)])
   with b' have b'_frontier: "b' \<in>\<^sub>A frontier (c_imp c loc2)"
     using in_implied_frontier_alt_in_implication_frontier assms by blast
-  \<comment> \<open>..and this pointstamp must be equal to b'\<close>
+      \<comment> \<open>..and this pointstamp must be equal to b'\<close>
   have b'_ria: "b' = results_in a s"
   proof (rule ccontr)
     assume "b' \<noteq> results_in a s"
@@ -1574,7 +1574,7 @@ proof -
     from b'_frontier b'_lt b_ria assms(4) show False
       using frontier_comparable_False by blast
   qed
-  \<comment> \<open>Hence, the implication frontier pointstamp b is reflected in the implied_frontier_alt\<close>
+    \<comment> \<open>Hence, the implication frontier pointstamp b is reflected in the implied_frontier_alt\<close>
   from b' b'_ria b_ria show "b \<in>\<^sub>A implied_frontier_alt c loc2"
     by (auto simp: implied_frontier_alt_def)
 qed
@@ -1673,16 +1673,16 @@ lemma implied_frontier_implied_frontier_alt: "implied_frontier (c_pts c) loc = i
   apply (simp flip: zcount_ne_zero_iff)
   subgoal for u loc s t
     apply (rule obtain_elem_frontier[of "c_pts c loc" t])
-     apply (metis le_less)
+    apply (metis le_less)
     subgoal for a
       apply (rule exI[of _ "results_in a s"])
       apply (rule conjI[rotated])
       using results_in_mono(1) apply blast
       apply (subst sum_nonneg_eq_0_iff; simp add: sum_nonneg)
-       apply (rule exI[of _ loc])
-       apply (subst sum_nonneg_eq_0_iff; simp)
-       apply (rule bexI[of _ s])
-       apply auto
+      apply (rule exI[of _ loc])
+      apply (subst sum_nonneg_eq_0_iff; simp)
+      apply (rule bexI[of _ s])
+      apply auto
       done
     done
   done

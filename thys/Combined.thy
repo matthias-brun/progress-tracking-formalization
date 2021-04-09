@@ -263,7 +263,7 @@ subsection\<open>Auxiliary lemmas for CM conversion\<close>
 lemma apply_cm_is_cm:
   "\<exists>t'. t' \<in>\<^sub>A frontier (c_imp c loc) \<and> t' \<le> t \<Longrightarrow> n \<noteq> 0 \<Longrightarrow> next_change_multiplicity' c (apply_cm c loc t n) loc t n"
   by (auto simp: next_change_multiplicity'_def apply_cm_def
-    intro!: Propagate.configuration.equality)
+      intro!: Propagate.configuration.equality)
 
 lemma update_zmultiset_commute:
   "update_zmultiset (update_zmultiset M t' n') t n = update_zmultiset (update_zmultiset M t n) t' n'"
@@ -421,7 +421,7 @@ proof -
       then show ?thesis
         using comp_fun_commute_apply_cm
         apply (intro comp_fun_commute.fold_rec)
-        apply simp_all
+          apply simp_all
         done
     qed
     have "zcount (c_pts (Finite_Set.fold ?f c (set_zmset \<Delta> - {(loc, x)})) loc) x
@@ -442,7 +442,7 @@ lemma implications_cm_all[simp]:
   "c_imp (cm_all' c \<Delta>) = c_imp c"
   unfolding cm_all'_def Let_def
   apply (rule fold_invar[OF finite_set_zmset])
-  apply auto
+    apply auto
   done
 
 lemma lift_cm_inv_cm_all':
@@ -454,19 +454,19 @@ proof -
   let ?cond_invar = "\<lambda>c. \<forall>(loc, t)\<in>#\<^sub>z\<Delta>. \<exists>t'. t' \<in>\<^sub>A frontier (c_imp c loc) \<and> t' \<le> t"
   let ?invar = "\<lambda>c. ?cond_invar c \<and> P c"
   show ?thesis
-  unfolding cm_all'_def
-  apply (rule conjunct2[OF fold_invar[OF finite_set_zmset, of ?invar]])
-  using assms(2,3) apply simp
-  subgoal
-    apply safe
-     apply auto []
-    apply (rule assms(1))
-     apply simp
-    apply (rule apply_cm_is_cm)
-     apply auto
+    unfolding cm_all'_def
+    apply (rule conjunct2[OF fold_invar[OF finite_set_zmset, of ?invar]])
+    using assms(2,3) apply simp
+    subgoal
+      apply safe
+       apply auto []
+      apply (rule assms(1))
+       apply simp
+      apply (rule apply_cm_is_cm)
+       apply auto
+      done
+    apply simp
     done
-  apply simp
-  done
 qed
 
 lemma lift_cm_inv_cm_all:

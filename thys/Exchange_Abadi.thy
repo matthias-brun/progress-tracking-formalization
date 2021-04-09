@@ -124,8 +124,8 @@ lemma init_InvTempUpright: "init_config c \<Longrightarrow> InvTempUpright c"
 
 lemma upright_obtain_support:
   assumes "upright a"
-      and "zcount a t > 0"
-    obtains s where "s < t" "zcount a s < 0" "nonpos_upto a s"
+    and "zcount a t > 0"
+  obtains s where "s < t" "zcount a s < 0" "nonpos_upto a s"
   using assms unfolding upright_alt supported_strong_def
   apply atomize_elim
   using order.strict_implies_order apply blast
@@ -158,11 +158,11 @@ proof -
     }
     with upr1 upr2 zcnt have "supported_strong ?v0 t" unfolding supported_strong_def
       apply (cases "0 < zcount v1 t"; cases "0 < zcount v2 t")
-      apply auto [2]
-      apply (subst (1 2) add.commute)
-      apply auto
+         apply auto [2]
+       apply (subst (1 2) add.commute)
+       apply auto
       done
-    }
+  }
   with assms show ?thesis
     by (simp add: upright_alt)
 qed
@@ -293,14 +293,14 @@ lemma next_InvGlobalRecordCount: "holds InvGlobalRecordCount s \<Longrightarrow>
     subgoal for p q q'
       apply (simp add: if_distrib[of "\<lambda>f. f _"])
       apply safe
-      apply (simp add: if_distrib[of sum_list])
-      apply (subst sum_list_hd_tl)
-       apply simp
-      apply (subst add.commute)
-      apply (simp add: sum.distrib)
-      apply (subst sum_if_distrib_add')
+       apply (simp add: if_distrib[of sum_list])
+       apply (subst sum_list_hd_tl)
         apply simp
-       apply simp
+       apply (subst add.commute)
+       apply (simp add: sum.distrib)
+       apply (subst sum_if_distrib_add')
+         apply simp
+        apply simp
        apply (simp add: add.assoc)
       apply (subst if_eq_same)
       apply simp
@@ -362,7 +362,7 @@ lemma next_performop_vacant:
   apply clarsimp
   subgoal for p c u r
     apply (clarsimp simp: upright_def supported_def)
-     apply (metis (no_types, hide_lams) gr_implies_not_zero of_nat_le_0_iff order.strict_implies_order order_trans zero_less_iff_neq_zero)
+    apply (metis (no_types, hide_lams) gr_implies_not_zero of_nat_le_0_iff order.strict_implies_order order_trans zero_less_iff_neq_zero)
     done
   done
 
@@ -388,7 +388,7 @@ lemma spec_imp_SafeStickyNrecVacantUpto_aux: "alw next s \<Longrightarrow> alw S
       apply (erule alw.cases)
       apply clarsimp
       apply (elim disjE)
-        apply (simp_all add: next_performop_vacant next_sendupd_vacant next_recvupd_vacant)
+         apply (simp_all add: next_performop_vacant next_sendupd_vacant next_recvupd_vacant)
       done
     by blast
   done
@@ -405,9 +405,9 @@ lemma invs_imp_InvGlobVacantUptoImpliesNrec:
   using assms unfolding InvGlobVacantUptoImpliesNrec_def
   apply simp
   apply clarify
-    apply (rule ccontr)
-    apply (simp add: vacant_upto_def)
-    apply clarify
+  apply (rule ccontr)
+  apply (simp add: vacant_upto_def)
+  apply clarify
   subgoal for t q u
   proof -
     assume globvut: "\<forall>sa\<le>t. zcount (c_glob (shd s) q) sa = 0"
@@ -458,21 +458,21 @@ lemma betaupright_PositiveImplies: "upright (va + vb) \<Longrightarrow> Positive
     subgoal for s
       apply (rule exI[of _ s])
       apply simp
-       apply (simp add: add_less_zeroD)
+      apply (simp add: add_less_zeroD)
       done
     done
   done
 
 lemma betaupright_obtain_support:
   assumes "beta_upright va vb"
-          "zcount va t > 0"
+    "zcount va t > 0"
   obtains s where "s < t" "zcount va s < 0 \<or> zcount vb s < 0" "nonpos_upto va s"
   using assms by (auto simp: beta_upright_alt)
 
 lemma betaupright_upright_vut:
   assumes "beta_upright va vb"
-  and     "upright vb"
-  and     "vacant_upto (va + vb) t"
+    and     "upright vb"
+    and     "vacant_upto (va + vb) t"
   shows   "vacant_upto va t"
 proof -
   { fix s
@@ -486,7 +486,7 @@ proof -
         unfolding vacant_upto_def
         apply clarsimp
         apply (erule upright_obtain_support[of vb x])
-        apply (metis add_less_same_cancel2 order.trans order.strict_implies_order)
+         apply (metis add_less_same_cancel2 order.trans order.strict_implies_order)
         apply (metis add_less_same_cancel1 add_neg_neg order.order_iff_strict order.trans less_irrefl)
         done
     next
@@ -510,8 +510,8 @@ qed
 
 lemma beta_upright_add:
   assumes "upright vb"
-  and     "upright vc"
-  and     "beta_upright va vb"
+    and     "upright vc"
+    and     "beta_upright va vb"
   shows   "beta_upright va (vb + vc)"
 proof -
   { fix t
@@ -562,21 +562,22 @@ lemma init_InvInfoAtBetaUpright: "init_config c \<Longrightarrow> InvInfoAtBetaU
 
 lemma next_inv[consumes 1, case_names next_performop next_sendupd next_recvupd stutter]:
   assumes "next s"
-  and     "next_performop s \<Longrightarrow> P"
-  and     "next_sendupd s \<Longrightarrow> P"
-  and     "next_recvupd s \<Longrightarrow> P"
-  and     "shd (stl s) = shd s \<Longrightarrow> P"
+    and     "next_performop s \<Longrightarrow> P"
+    and     "next_sendupd s \<Longrightarrow> P"
+    and     "next_recvupd s \<Longrightarrow> P"
+    and     "shd (stl s) = shd s \<Longrightarrow> P"
   shows   "P"
   using assms unfolding next_def by blast
 
 
 lemma next_InvInfoAtBetaUpright:
   assumes a1: "next s"
-  and     a2: "InvInfoAtBetaUpright (shd s)"
-  and     a3: "InvIncomingInfoUpright (shd s)"
-  and     a4: "InvTempUpright (shd s)"
+    and     a2: "InvInfoAtBetaUpright (shd s)"
+    and     a3: "InvIncomingInfoUpright (shd s)"
+    and     a4: "InvTempUpright (shd s)"
   shows   "InvInfoAtBetaUpright (shd (stl s))"
-  using assms proof (cases rule: next_inv)
+  using assms
+proof (cases rule: next_inv)
   case next_performop
   then show ?thesis
     unfolding next_performop'_def Let_def InvInfoAtBetaUpright_def
@@ -595,7 +596,7 @@ lemma next_InvInfoAtBetaUpright:
       show ?thesis
         unfolding iid
         apply (rule beta_upright_add)
-        apply (meson InvIncomingInfoUpright_def a3)
+          apply (meson InvIncomingInfoUpright_def a3)
          apply (rule upright_\<Delta>)
         using bu unfolding conf InfoAt_def
         apply auto
@@ -729,7 +730,7 @@ proof -
   then show ?thesis by blast
 qed
 
-lemma *:
+lemma predicate_sum_decompose:
   fixes f :: "'a \<Rightarrow> ('b :: ab_group_add)"
   assumes "finite X"
     and     "x\<in>X"
@@ -741,15 +742,13 @@ lemma *:
   using assms(1,2,3)
   apply (induct X rule: finite_induct_select)
    apply simp
-  apply (simp add: sum.insert_remove)
+  apply (simp only: sum.insert_remove)
   subgoal for T
     apply (cases "x \<in> T"; simp add: assms(3))
      apply (drule psubset_imp_ex_mem)
      apply clarsimp
     subgoal for z
       apply (rule bexI[of _ z])
-       apply (rule conjI)
-        apply clarsimp
        apply (rule assms(6)[of z T])
         apply (rule assms(4)[THEN spec, of "{z}", simplified])
        apply simp
@@ -759,14 +758,14 @@ lemma *:
     apply (drule bspec[of _ _ x])
      apply safe
      apply (rule assms(2))
-    using assms(4) assms(5) apply blast
+    using assms(4,5) apply blast
     done
   done
 
 lemma invs_imp_InvGlobalInfoAtBetaUpright:
   assumes "holds InvInfoAtBetaUpright s"
-  and     "holds InvGlobalIncomingInfoUpright s"
-  and     "holds InvIncomingInfoUpright s"
+    and     "holds InvGlobalIncomingInfoUpright s"
+    and     "holds InvIncomingInfoUpright s"
   shows   "holds InvGlobalInfoAtBetaUpright s"
 proof -
   have uii: "\<forall>k p q. upright (IncomingInfo (shd s) k p q)"
@@ -780,7 +779,7 @@ proof -
     apply -
     apply (rule allI)+
     subgoal for k p q
-      apply (rule *[of UNIV p "\<lambda>v. beta_upright (InfoAt (shd s) k p q) v" "\<lambda>p'. IncomingInfo (shd s) (if p' = p then Suc k else 0) p' q" upright])
+      apply (rule predicate_sum_decompose[of UNIV p "\<lambda>v. beta_upright (InfoAt (shd s) k p q) v" "\<lambda>p'. IncomingInfo (shd s) (if p' = p then Suc k else 0) p' q" upright])
            apply simp
           apply simp
          apply simp
@@ -821,13 +820,13 @@ lemma gvut2:
 
 lemma gvut3:
   assumes
-   gvu: "GlobVacantUpto (shd s) q t" and
-   igvuin: "InvGlobVacantUptoImpliesNrec (shd s)" and
-   igrc: "InvGlobalRecordCount (shd s)" and
-   igiiu: "InvGlobalIncomingInfoUpright (shd s)" and
-   igiabu: "InvGlobalInfoAtBetaUpright (shd s)" and
-   "next": "next_recvupd s"
- shows "GlobVacantUpto (shd (stl s)) q t"
+    gvu: "GlobVacantUpto (shd s) q t" and
+    igvuin: "InvGlobVacantUptoImpliesNrec (shd s)" and
+    igrc: "InvGlobalRecordCount (shd s)" and
+    igiiu: "InvGlobalIncomingInfoUpright (shd s)" and
+    igiabu: "InvGlobalInfoAtBetaUpright (shd s)" and
+    "next": "next_recvupd s"
+  shows "GlobVacantUpto (shd (stl s)) q t"
 proof -
   { fix p
     let ?GII0 = "GlobalIncomingInfo (shd s) 0 p q"
