@@ -1,8 +1,12 @@
+section \<open>Combined Progress Tracking Protocol\label{sec:combined}\<close>
+
+(*<*)
 theory Combined
   imports
     Exchange
     Propagate
 begin
+(*>*)
 
 lemma fold_invar:
   assumes "finite M"
@@ -12,7 +16,7 @@ lemma fold_invar:
   shows   "P (Finite_Set.fold f z M)"
   using assms by (induct M arbitrary: z rule: finite_induct) (auto simp: comp_fun_commute.fold_insert)
 
-section\<open>Could-result-in relation\<close>
+subsection\<open>Could-result-in Relation\<close>
 
 context dataflow_topology begin
 
@@ -95,9 +99,9 @@ lemma wf_cri: "wf {(l, l'). (l, t) <\<^sub>p (l', t)}"
 
 end
 
-section\<open>Specification\<close>
+subsection\<open>Specification\<close>
 
-subsection\<open>Configuration\<close>
+subsubsection\<open>Configuration\<close>
 
 record ('p::finite, 't::order, 'loc) configuration =
   exchange_config :: "('p, ('loc \<times> 't)) Exchange.configuration"
@@ -111,8 +115,8 @@ context dataflow_topology begin
 definition the_cm where
   "the_cm c loc t n = (THE c'. next_change_multiplicity' c c' loc t n)"
 
-text\<open>the_cm is not commutative in general, only if the necessary conditions hold. It can be converted
-to apply_cm for which we prove comp_fun_commute.\<close>
+text\<open>@{term the_cm} is not commutative in general, only if the necessary conditions hold. It can be converted
+to @{term apply_cm} for which we prove @{term comp_fun_commute}.\<close>
 definition apply_cm where
   "apply_cm c loc t n =
     (let new_pointstamps = (\<lambda>loc'.
@@ -133,7 +137,7 @@ definition cm_all where
 definition "propagate_all c0 = while_option (\<lambda>c. \<exists>loc. (c_work c loc) \<noteq> {#}\<^sub>z)
                                             (\<lambda>c. SOME c'. \<exists>loc t. next_propagate' c c' loc t) c0"
 
-subsection\<open>Initial state and state transitions\<close>
+subsubsection\<open>Initial state and state transitions\<close>
 
 definition InitConfig :: "('p::finite, 't::order, 'loc) configuration \<Rightarrow> bool" where
   "InitConfig c =
@@ -256,9 +260,9 @@ lemma NextRecvCapD:
     "unchanged init c0 c1"
   using assms unfolding NextRecvCap'_def by simp_all
 
-section\<open>Auxiliary lemmas\<close>
+subsection\<open>Auxiliary Lemmas\<close>
 
-subsection\<open>Auxiliary lemmas for CM conversion\<close>
+subsubsection\<open>Auxiliary Lemmas for CM Conversion\<close>
 
 lemma apply_cm_is_cm:
   "\<exists>t'. t' \<in>\<^sub>A frontier (c_imp c loc) \<and> t' \<le> t \<Longrightarrow> n \<noteq> 0 \<Longrightarrow> next_change_multiplicity' c (apply_cm c loc t n) loc t n"
@@ -572,7 +576,7 @@ lemma lift_propagate_inv_propagate_all:
     done
   done
 
-section\<open>Exchange is a subsystem of Tracker\<close>
+subsection\<open>Exchange is a Subsystem of Tracker\<close>
 
 text\<open>Steps in the Tracker are valid steps in the Exchange protocol.\<close>
 lemma next_imp_exchange_next:
@@ -612,7 +616,7 @@ lemmas
   exch_alw_InvMsgInGlob                  = lift_exchange_invariant[OF cri.alw_InvMsgInGlob, simplified atomize_imp, simplified, folded atomize_imp] and
   exch_alw_InvTempJustified              = lift_exchange_invariant[OF cri.alw_InvTempJustified, simplified atomize_imp, simplified, folded atomize_imp]
 
-section\<open>Definitions\<close>
+subsection\<open>Definitions\<close>
 
 (* First variant of global safe *)
 definition safe_combined :: "('p::finite, 't::order, 'loc) configuration \<Rightarrow> bool" where
@@ -648,9 +652,9 @@ lemma safe_combined_implies_safe_combined2:
     done
   done
 
-section\<open>Propagate is a subsystem of Tracker\<close>
+subsection\<open>Propagate is a Subsystem of Tracker\<close>
 
-subsection\<open>CM conditions\<close>
+subsubsection\<open>CM Conditions\<close>
 
 definition InvMsgCMConditions where
   "InvMsgCMConditions c = (\<forall>p q.
@@ -670,9 +674,9 @@ lemma msg_is_cm_safe:
   using order_trans apply blast
   done
 
-subsection\<open>Propagate safety and InvGlobPointstampsEq\<close>
+subsubsection\<open>Propagate Safety and InvGlobPointstampsEq\<close>
 
-text\<open>In order to be able to use the msg_is_cm_safe lemma at all times and show that Propagate is a
+text\<open>To be able to use the @{thm[source] msg_is_cm_safe} lemma at all times and show that Propagate is a
 subsystem we need to prove that the specification implies Propagate's safe and the
 InvGlobPointstampsEq. Both of these depend on the CM conditions being satisfied during the
 NextRecvUpd' step and the safety proof additionally depends on other Propagate invariants, which
@@ -1012,11 +1016,11 @@ proof -
     unfolding safe_def by blast
   from t2(2) and s_full(2) have "t2 \<le> results_in (results_in t0 s1) s2"
     by (metis followed_by_summary order_trans results_in_mono(2))
-  with s1(2) have "t2 \<le> results_in t1 s2" by (meson dual_order.trans results_in_mono(1))
+  with s1(2) have "t2 \<le> results_in t1 s2" by (meson order.trans results_in_mono(1))
   with t2(1) show ?thesis by auto
 qed
 
-\<comment> \<open>Lift an invariant's preservation proof over next_propagate' to NextPropagate' transitions\<close>
+\<comment> \<open>Lift an invariant's preservation proof over @{term next_propagate'} to NextPropagate' transitions\<close>
 lemma lift_prop_inv_NextPropagate':
   assumes "(\<And>c0 c1 loc t. P c0 \<Longrightarrow> next_propagate' c0 c1 loc t \<Longrightarrow> P c1)"
   shows   "P (prop_config c0 p') \<Longrightarrow> NextPropagate' c0 c1 p \<Longrightarrow> P (prop_config c1 p')"
@@ -1047,7 +1051,7 @@ proof -
     done
 qed
 
-subsection\<open>Propagate is a subsystem\<close>
+subsubsection\<open>Propagate is a Subsystem\<close>
 
 
 lemma NextRecvUpd'_next':
@@ -1160,7 +1164,7 @@ lemma spec_imp_propagate_spec: "FullSpec s \<Longrightarrow> (holds init_config 
   apply (auto intro!: alw_next_imp_propagate_next simp: FullSpec_def InitConfig_def)
   done
 
-section\<open>Safety proofs\<close>
+subsection\<open>Safety Proofs\<close>
 
 lemma safe_satisfied:
   assumes "cri.InvGlobNonposImpRecordsNonpos (exchange_config c)"
@@ -1211,4 +1215,7 @@ lemma alw_implication_frontier_eq_implied_frontier:
     (auto simp: implication_frontier_iff_implied_frontier_vacant all_imp_alw elim: alw_mp)
 
 end
+
+(*<*)
 end
+(*>*)

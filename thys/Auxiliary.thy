@@ -1,11 +1,15 @@
+section \<open>Auxiliary Lemmas\<close>
+
+(*<*)
 theory Auxiliary
   imports
     "HOL-Library.Multiset"
     "Nested_Multisets_Ordinals.Signed_Multiset"
     "HOL-Library.Linear_Temporal_Logic_on_Streams"
 begin
+(*>*)
 
-section\<open>General\<close>
+subsection\<open>General\<close>
 
 lemma UNIV_prod: "UNIV = UNIV \<times> UNIV"
   by simp
@@ -86,7 +90,7 @@ proof (induct xs)
 qed simp
 
 
-section\<open>Sums\<close>
+subsection\<open>Sums\<close>
 
 lemma elems_eq_sum_eq: "(\<And>x. x\<in>M \<longrightarrow> f x = g x) \<Longrightarrow> (\<Sum>x\<in>M. f x) = (\<Sum>x\<in>M. g x)"
   by simp
@@ -162,7 +166,7 @@ lemma sum_eq_split_sums:
   shows   "(\<Sum>x\<in>M. f x) = (\<Sum>x\<in>M. g x) + (\<Sum>x\<in>M. h x)"
   by (simp add: assms sum.distrib)
 
-section\<open>Partial orders\<close>
+subsection\<open>Partial Orders\<close>
 
 lemma (in order) order_finite_set_exists_foundation:
   fixes   t :: 'a
@@ -186,7 +190,7 @@ lemma order_finite_set_obtain_foundation:
   obtains s where "s \<in> M \<and> s \<le> t \<and> (\<forall>u\<in>M. \<not> u < s)"
   using assms order_finite_set_exists_foundation by blast
 
-section\<open>Multisets\<close>
+subsection\<open>Multisets\<close>
 
 lemma multiset_eq_minus_plus_conv: "x \<in># N \<Longrightarrow> (M = N - {#x#}) = (M + {#x#} = N)"
   by auto
@@ -286,7 +290,7 @@ lemma image_mset_take_drop_subseteq: "{# (p,m). m \<in># mset xs #} \<subseteq>#
   apply (simp flip: image_mset_union mset_append)
   done
 
-section\<open>Signed Multisets\<close>
+subsection\<open>Signed Multisets\<close>
 
 lemma zcount_nonemptyI: "zcount M t \<noteq> 0 \<Longrightarrow> M \<noteq> {#}\<^sub>z"
   by auto
@@ -474,7 +478,7 @@ lemma (in order) elem_order_zmset_exists_foundation':
   using assms elem_order_zmset_exists_foundation
   by (meson le_less_linear)
 
-subsection\<open>image_zmset\<close>
+subsubsection\<open>Image of a Signed Multiset\<close>
 
 lift_definition image_zmset :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a zmultiset \<Rightarrow> 'b zmultiset" is
   "\<lambda>f (M, N). (image_mset f M, image_mset f N)"
@@ -596,7 +600,7 @@ proof -
     by auto
 qed
 
-section\<open>Streams\<close>
+subsection\<open>Streams\<close>
 
 definition relates :: "('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> 'a stream \<Rightarrow> bool" where
   "relates \<phi> s = \<phi> (shd s) (shd (stl s))"
@@ -628,7 +632,7 @@ lemma alw_relates: "alw (relates P) s \<longleftrightarrow> P (shd s) (shd (stl 
   apply (auto simp: relates_def)
   done
 
-section\<open>Notation\<close>
+subsection\<open>Notation\<close>
 
 no_notation AND  (infix "aand" 60)
 no_notation OR   (infix "or" 60)
@@ -638,4 +642,6 @@ notation AND  (infixr "aand" 70)
 notation OR   (infixr "or" 65)
 notation IMPL (infixr "imp" 60)
 
+(*<*)
 end
+(*>*)

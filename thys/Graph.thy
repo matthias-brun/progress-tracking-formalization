@@ -1,8 +1,10 @@
-section\<open>Multigraphs with partially ordered weights\<close>
+section\<open>Multigraphs with Partially Ordered Weights\<close>
 
+(*<*)
 theory Graph
   imports "HOL-Library.Sublist" Antichain
 begin
+(*>*)
 
 abbreviation (input) FROM where
   "FROM \<equiv> \<lambda>(s, l, t). s"
@@ -25,7 +27,7 @@ begin
 lemma le_plus: "(s::'lbl) \<le> s + s'" "(s'::'lbl) \<le> s + s'"
   by (intro plus_mono[of s s 0 s', simplified] plus_mono[of 0 s s' s', simplified])+
 
-subsection\<open>Paths and general facts about them\<close>
+subsection\<open>Paths\<close>
 
 inductive path :: "'vtx \<Rightarrow> 'vtx \<Rightarrow> ('vtx \<times> 'lbl \<times> 'vtx) list \<Rightarrow> bool" where
   path0: "l1 = l2 \<Longrightarrow> path l1 l2 []"
@@ -154,7 +156,7 @@ qed
 lemma path_edge: "(l1', lbl, l2') \<in> set xs \<Longrightarrow> path l1 l2 xs \<Longrightarrow> lbl \<in>\<^sub>A weights l1' l2'"
   by (rotate_tac, induct rule: path.induct) auto
 
-subsection\<open>Path weights and facts\<close>
+subsection\<open>Path Weights\<close>
 
 abbreviation sum_weights :: "'lbl list \<Rightarrow> 'lbl" where
   "sum_weights xs \<equiv> foldr (+) xs 0"
@@ -377,4 +379,6 @@ qed
 
 end
 
+(*<*)
 end
+(*>*)

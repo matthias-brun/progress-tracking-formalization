@@ -1,10 +1,14 @@
+section \<open>Exchange Protocol\label{sec:exchange}\<close>
+
+(*<*)
 theory Exchange
   imports
     "HOL-Library.While_Combinator"
     Auxiliary
 begin
+(*>*)
 
-section\<open>Definitions\<close>
+subsection\<open>Specification\<close>
 
 record ('p, 't) configuration =
   c_temp :: "'p \<Rightarrow> 't zmultiset"
@@ -57,7 +61,7 @@ lemma justified_alt:
     apply (drule spec[of _ s])
     apply safe
       apply (meson le_less_trans less_le_trans nonpos_upto_def)
-    using dual_order.strict_trans1 apply blast
+    using order.strict_trans2 apply blast
     using order.order_iff_strict apply auto
     done
   apply blast
@@ -83,7 +87,7 @@ lemma justified_with_alt: "justified_with C M N =
   subgoal for t s
     apply (drule spec[of _ s])
     apply safe
-    using dual_order.strict_trans dual_order.strict_trans1 apply blast+
+    using order.strict_trans order.strict_trans2 apply blast+
     apply (metis add_less_zeroD order.order_iff_strict not_less_iff_gr_or_eq order_class.order.strict_trans)
     done
   apply blast
@@ -116,15 +120,13 @@ definition GlobalIncomingInfo :: "('p :: finite, 'a) configuration \<Rightarrow>
 abbreviation GlobalIncomingInfoAt where
   "GlobalIncomingInfoAt c q \<equiv> GlobalIncomingInfo c 0 q q"
 
-section\<open>Specification\<close>
-
 definition init_config :: "('p :: finite, 'a) configuration \<Rightarrow> bool" where
   "init_config c \<equiv>
       (\<forall>p. c_temp c p = {#}\<^sub>z) \<and>
       (\<forall>p1 p2. c_msg c p1 p2 = []) \<and>
       \<comment> \<open>Capabilities have non-negative multiplicities\<close>
       (\<forall>p t. 0 \<le> zcount (c_caps c p) t) \<and>
-      \<comment> \<open>The pointstamps in glob are exactly those in nrec\<close>
+      \<comment> \<open>The pointstamps in glob are exactly those in @{term records}\<close>
       (\<forall>p. c_glob c p = records c) \<and>
       \<comment> \<open>All capabilities are being tracked\<close>
       c_data_msg c = {#}"
@@ -143,7 +145,7 @@ text\<open>
 Can minting of capabilities be described as a refinement of the Abadi model?
 Short answer: No, not in general.
 Long answer:
-Could slightly modify Abadi model, such that a capability always comes with a multiplicity 2^64 (or
+Could slightly modify Abadi model, such that a capability always comes with a multiplicity $2^64$ (or
 similar, could be parametrized over arbitrarily large constant). In that case minting new
 capabilities can be described as an upright change, dropping one of the capabilities, to make the
 change upright. This only works as long as no capability is required more than the constant number
@@ -154,52 +156,52 @@ Issues:
 \<close>
 
 text\<open>Rationale for the condition on @{term "c_caps c0 p"}:
-In Abadi next_performop' has the premise @{term "\<forall>t. int (count \<Delta>neg t) \<le> zcount (records c0) t"},
-(records corresponds to the global field nrec in that model)
+In Abadi, the operation @{term next_performop'} has the premise @{term "\<forall>t. int (count \<Delta>neg t) \<le> zcount (records c0) t"},
+(records corresponds to the global field @{term nrec} in that model)
 which means the processor performing the transition must verify that this condition is met.
 Since @{term "records c"} is "global" state, which no processor can know, an implementation of
 this protocol has to include some other protocol or reasoning for when it is safe to do this
 transition.
 
 Naively using a processor's @{term "c_glob c p"} to approximate @{term "records c"} and justify
-transitions can cause a race condition, where a processor drops a pointstamp, e.g.
+transitions can cause a race condition, where a processor drops a pointstamp, e.g.,
 @{term "\<Delta>neg = {#t#}"}, after which @{term "zcount (records c) t = 0"} but other processors might still
 use the pointstamp to justify the creation of pointstamps that violate the safety property.
 
-Instead we model ownership of pointstamps, calling "owned pointstamps" \<^bold>\<open>capabilities\<close>}, which are
-tracked in @{term "c_caps c"}. In place of nrec we define @{term "records c"}, which is the sum of
+Instead we model ownership of pointstamps, calling "owned pointstamps" \<^bold>\<open>capabilities\<close>, which are
+tracked in @{term "c_caps c"}. In place of @{term nrec} we define @{term "records c"}, which is the sum of
 all capabilities, as well as @{term "c_data_msg c"}, which contains the capabilities carried by data
 messages. Since @{term "\<forall>p t. zcount (c_caps c p) t \<le> zcount (records c) t"}, our condition
-@{term "\<forall>t. int (count \<Delta>neg t) \<le> zcount (c_caps c0 p) t"} implies the one on nrec in Abadi's model.
+@{term "\<forall>t. int (count \<Delta>neg t) \<le> zcount (c_caps c0 p) t"} implies the one on @{term nrec} in Abadi's model.
 \<close>
 
 text\<open>Conditions in performop:
 
-The performop transition takes three msets of pointstamps, \<Delta>neg \<Delta>mint_msg \<Delta>mint_self
-\<Delta>neg contains dropped capabilities (a subset of c_caps)
-\<Delta>mint_msg contains pairs (p,t), where a data message is sent (i.e. capability added to the pool), creating a capability at t, owned by p
-\<Delta>mint_self contains pointstamps minted and owned by worker p
+The performop transition takes three msets of pointstamps, @{term \<Delta>neg}, @{term \<Delta>mint_msg}, and @{term \<Delta>mint_self}
+@{term \<Delta>neg} contains dropped capabilities (a subset of @{term c_caps})
+@{term \<Delta>mint_msg} contains pairs @{term "(p,t)"}, where a data message is sent (i.e. capability added to the pool), creating a capability at t, owned by p
+@{term \<Delta>mint_self} contains pointstamps minted and owned by worker @{term p}
 
-\<Delta>neg in combination with \<Delta>mint_msg also allows any upright updates to be made as in the Abadi model,
+@{term \<Delta>neg} in combination with @{term \<Delta>mint_msg} also allows any upright updates to be made as in the Abadi model,
 meaning this definition allows strictly more behaviors.
 
 The @{term "\<Delta>mint_msg \<noteq> {#} \<or> zmset_of \<Delta>mint_self - zmset_of \<Delta>neg \<noteq> {#}\<^sub>z"} condition ensures that
-no-ops aren't possible. However, it's still possible that the combined \<Delta> is empty. E.g. a processor
+no-ops aren't possible. However, it's still possible that the combined @{term \<Delta>} is empty. E.g. a processor
 has capabilities 1 and 2, uses cap 1 to send a message, minting capability 2. Simultaneously it
 drops a capability 2 (for unrelated reasons), cancelling out the overall change but shifting a
 capability to the pool, possibly with a different owner than itself.\<close>
 
 definition next_performop' :: "('p::finite, 'a) configuration \<Rightarrow> ('p, 'a) configuration \<Rightarrow> 'p \<Rightarrow> 'a multiset \<Rightarrow> ('p \<times> 'a) multiset \<Rightarrow> 'a multiset \<Rightarrow> bool" where
   "next_performop' c0 c1 p \<Delta>neg \<Delta>mint_msg \<Delta>mint_self =
-    \<comment> \<open>\<Delta>pos contains all positive changes, \<Delta> the combined positive and negative changes\<close>
+    \<comment> \<open>@{term \<Delta>pos} contains all positive changes, @{term \<Delta>} the combined positive and negative changes\<close>
    (let \<Delta>pos = timestamps (zmset_of \<Delta>mint_msg) + zmset_of \<Delta>mint_self;
         \<Delta> = \<Delta>pos - zmset_of \<Delta>neg
     in
       (\<Delta>mint_msg \<noteq> {#} \<or> zmset_of \<Delta>mint_self - zmset_of \<Delta>neg \<noteq> {#}\<^sub>z)
     \<and> (\<forall>t. int (count \<Delta>neg t) \<le> zcount (c_caps c0 p) t)
-    \<comment> \<open>Pointstamps added in \<Delta>mint_self are minted at p\<close>
+    \<comment> \<open>Pointstamps added in @{term \<Delta>mint_self} are minted at p\<close>
     \<and> minting_self (c_caps c0 p) \<Delta>mint_self
-    \<comment> \<open>Pointstamps added in \<Delta>mint_msg correspond to sent data messages\<close>
+    \<comment> \<open>Pointstamps added in @{term \<Delta>mint_msg} correspond to sent data messages\<close>
     \<and> minting_msg (c_caps c0 p) \<Delta>mint_msg
     \<comment> \<open>Worker immediately knows about dropped and minted capabilities\<close>
     \<and> c1 = c0\<lparr>c_caps := (c_caps c0)(p := c_caps c0 p + zmset_of \<Delta>mint_self - zmset_of \<Delta>neg),
@@ -253,9 +255,7 @@ definition SafeGlobVacantUptoImpliesStickyNrec :: "('p :: finite, 'a) computatio
   "SafeGlobVacantUptoImpliesStickyNrec s =
      (let c = shd s in \<forall>t q. GlobVacantUpto c q t \<longrightarrow> alw (holds (\<lambda>c. RecordsVacantUpto c t)) s)"
 
-section\<open>Auxiliary Lemmas\<close>
-
-subsection\<open>Other stuff\<close>
+subsection\<open>Auxiliary Lemmas\<close>
 
 lemma finite_induct_select [consumes 1, case_names empty select]:
   assumes "finite S"
@@ -394,7 +394,7 @@ lemma zero_lt_diff: "(0::int) < a - b \<Longrightarrow> b \<ge> 0 \<Longrightarr
 lemma zero_lt_add_disj: "0 < (a::int) + b \<Longrightarrow> 0 \<le> a \<Longrightarrow> 0 \<le> b \<Longrightarrow> 0 < a \<or> 0 < b"
   by auto
 
-subsection\<open>Transition lemmas\<close>
+subsubsection\<open>Transition lemmas\<close>
 
 lemma next_performopD:
   assumes "next_performop' c0 c1 p \<Delta>neg \<Delta>mint_msg \<Delta>mint_self"
@@ -587,7 +587,7 @@ lemma ex_next_recvupd:
                    c_glob := (\<lambda>q'. if q' = q then c_glob c0 q + hd (c_msg c0 p q) else c_glob c0 q')\<rparr>"])
         (auto simp: fun_eq_iff)
 
-subsection\<open>Facts about justifiedness\<close>
+subsubsection\<open>Facts about @{term justified}'ness\<close>
 
 lemma justified_empty[simp]: "justified {#}\<^sub>z {#}\<^sub>z"
   by (simp add: justified_def)
@@ -605,11 +605,11 @@ lemma justified_leastI:
      apply (auto intro: ccontr) []
     apply (elim disj3_split)
       apply (rule disjI1)
-    using dual_order.strict_trans1 apply blast
+    using order.strict_trans2 apply blast
      apply (rule disjI2, rule disjI1)
-    using dual_order.strict_trans1 apply blast
+    using order.strict_trans2 apply blast
     apply (clarsimp simp: nonpos_upto_def)
-    apply (metis le_less_linear linear local.le_imp_less_or_eq preorder_class.le_less_trans)
+    apply (metis le_less_linear linear le_imp_less_or_eq preorder_class.le_less_trans)
     done
   done
 
@@ -657,7 +657,7 @@ lemma justified_add:
                   using assms(3) by (auto simp: add_nonneg_pos intro!: exI[of _ s''])
                 done
               subgoal
-                by (metis add.right_neutral add_strict_increasing2 assms(3) less_add_same_cancel1 dual_order.strict_trans2 pos_add_strict zcount_union)
+                by (metis add.right_neutral add_strict_increasing2 assms(3) less_add_same_cancel1 order.strict_trans1 pos_add_strict zcount_union)
               done
             done
           done
@@ -679,7 +679,7 @@ lemma justified_add:
             apply (intro conjI)
               apply blast
              apply (rule add_nonpos_neg)
-              apply (metis order.strict_trans1 less_imp_le not_le not_less_iff_gr_or_eq order_class.dual_order.strict_trans2 supported_strong_def)
+              apply (metis order.strict_trans1 less_imp_le not_le not_less_iff_gr_or_eq order_class.order.strict_trans2 supported_strong_def)
              apply simp
             apply (clarsimp simp: nonpos_upto_def)
             done
@@ -736,8 +736,7 @@ lemma justified_add:
                   done
                 subgoal
                   apply (rule disjI2, rule disjI1, rule exI[of _ s'], rule conjI)
-                  using assms(4) apply (auto intro!: add_pos_nonneg)
-                  done
+                  using assms(4) by (auto intro!: add_pos_nonneg)
                 done
               done
             done
@@ -754,7 +753,7 @@ lemma justified_add:
               apply (clarsimp simp: nonpos_upto_def intro!: exI[of _ s])
               using assms(2)[unfolded justified_alt nonpos_upto_def supported_strong_def, rule_format, of s]
                 assms(4)[rule_format, of s]
-              apply (metis (mono_tags, hide_lams) less_add_same_cancel1 dual_order.strict_trans1 less_imp_le not_less order_class.order.not_eq_order_implies_strict order_class.order.strict_implies_order)
+              apply (metis (mono_tags, hide_lams) less_add_same_cancel1 order.strict_trans2 less_imp_le not_less order_class.order.not_eq_order_implies_strict order_class.order.strict_implies_order)
               done
             done
           subgoal
@@ -943,7 +942,7 @@ proof (intro allI impI justified_leastI)
         subgoal
           apply (intro disjI1 exI[of _ s])
           unfolding not_less
-          apply (metis (full_types) le_less_linear least local.eq_refl local.order.strict_trans1 nonpos_upto_def supported_strong_def sublist_order.add_less zcount_union)
+          apply (metis (full_types) le_less_linear least eq_refl order.strict_trans1 nonpos_upto_def supported_strong_def sublist_order.add_less zcount_union)
           done
         done
     next
@@ -1003,7 +1002,7 @@ proof (intro allI impI justified_leastI)
             apply (intro disjI1 exI[of _ t'] conjI)
               apply simp
              apply simp
-             apply (metis add_cancel_right_left add_mono_thms_linordered_field(1) count_eq_zero_iff local.dual_order.order_iff_strict of_nat_eq_0_iff)
+             apply (metis add_cancel_right_left add_mono_thms_linordered_field(1) count_eq_zero_iff order.order_iff_strict of_nat_eq_0_iff)
             using least nonpos_upto_def apply auto
             done
           done
@@ -1034,7 +1033,7 @@ proof (intro allI impI justified_leastI)
   qed
 qed
 
-subsection\<open>Facts about justified_with'ness\<close>
+subsubsection\<open>Facts about @{term justified_with}'ness\<close>
 
 lemma justified_with_add_records:
   assumes "justified_with C1 M N"
@@ -1212,7 +1211,7 @@ proof (intro justified_with_leastI allI impI)
       next
         case 3
         then show ?thesis
-          by (metis 2(1) add_cancel_left_right add_strict_increasing2 assms(4) not_le order_class.dual_order.irrefl order_class.dual_order.strict_trans2 pos_add_strict s(1) zcount_union)
+          by (metis 2(1) add_cancel_left_right add_strict_increasing2 assms(4) not_le order_class.order.irrefl order_class.order.strict_trans2 pos_add_strict s(1) zcount_union)
       qed
     qed
   next
@@ -1250,7 +1249,7 @@ proof (intro justified_with_leastI allI impI)
               apply (rule exI[of _ s'])
               apply (intro conjI)
                 apply simp
-               apply (metis add_cancel_right_right add_neg_neg dual_order.strict_implies_order nonpos_upto_def order_class.order.not_eq_order_implies_strict zcount_union)
+               apply (metis add_cancel_right_right add_neg_neg order.strict_implies_order nonpos_upto_def order_class.order.not_eq_order_implies_strict zcount_union)
               apply (meson least less_trans)
               done
             subgoal for s'
@@ -1645,9 +1644,9 @@ lemma next_performop'_preserves_justified_with:
   using assms(3) apply (simp add: add.commute add_increasing)
   done
 
-section\<open>Invariants\<close>
+subsection\<open>Invariants\<close>
 
-subsection\<open>InvRecordCount\<close>
+subsubsection\<open>InvRecordCount\<close>
 
 text\<open>InvRecordCount states that for every processor, its local approximation @{text "c_glob c q"}
 and the sum of all incoming progress updates @{text "GlobalIncomingInfoAt c q"} together are equal
@@ -1725,7 +1724,7 @@ lemma alw_InvRecordCount: "spec s \<Longrightarrow> alw (holds InvRecordCount) s
   using lift_invariant_to_spec init_config_implies_InvRecordCount next_preserves_InvRecordCount
   by (metis (mono_tags, lifting) holds.elims(2) holds.elims(3) nxt.simps)
 
-subsection\<open>InvCapsNonneg and InvRecordsNonneg\<close>
+subsubsection\<open>InvCapsNonneg and InvRecordsNonneg\<close>
 
 text\<open>InvCapsNonneg states that elements in a processor's @{text "c_caps c p"} always have
 non-negative cardinality. InvRecordsNonneg lifts this result to @{text "records c"}\<close>
@@ -1808,7 +1807,7 @@ proof -
     unfolding records_def by simp
 qed
 
-subsection\<open>SafeRecordsMono\<close>
+subsubsection\<open>SafeRecordsMono\<close>
 
 text\<open>The records in the system are monotonic, i.e. once @{text "records c"} contains no records up
 to some timestamp t, then it will stay that way forever.\<close>
@@ -1915,7 +1914,7 @@ lemma alw_SafeRecordsMono: "spec s \<Longrightarrow> alw SafeRecordsMono s"
   by (auto intro!: alw_next_implies_alw_SafeRecordsMono alw_InvRecordsNonneg alw_InvCapsNonneg simp: spec_def)
 
 
-subsection\<open>InvJustifiedII and InvJustifiedGII\<close>
+subsubsection\<open>InvJustifiedII and InvJustifiedGII\<close>
 
 text\<open>These two invariants state that any net-positive change in the sum of incoming progress updates
 is "justified" by one of several statements being true.\<close>
@@ -1926,10 +1925,8 @@ definition InvJustifiedII where
 definition InvJustifiedGII where
   "InvJustifiedGII c = (\<forall>k p q. justified (records c) (GlobalIncomingInfo c k p q))"
 
-subsubsection\<open>Auxilliary lemmas\<close>
-
-text\<open>Given some zmset M justified wrt to (caps c0 p), after a performop (M + \<Delta>) is justified wrt to
-(c_caps c1 p). This lemma captures the identical argument used for preservation of InvTempJustified
+text\<open>Given some zmset @{term M} justified wrt to @{term "caps c0 p"}, after a performop @{term "M + \<Delta>"} is justified wrt to
+@{term "c_caps c1 p"}. This lemma captures the identical argument used for preservation of InvTempJustified
 and InvJustifiedII.\<close>
 lemma next_performop'_preserves_justified:
   assumes "justified (c_caps c0 p) M"
@@ -1950,7 +1947,7 @@ proof -
       by atomize_elim (auto simp: complex_change)
     then have "supported_strong ?M1 t \<or> (\<exists>t'<t. 0 < zcount (c_caps c1 p) t') \<or> zcount ?M1 t < zcount (c_caps c1 p) t"
     proof cases
-      case 1 \<comment> \<open>M was already positive at t in c0\<close>
+      case 1 \<comment> \<open>@{term M} was already positive at @{term t} in @{term c0}\<close>
       note Mcount = 1
       note assms(1)[unfolded InvJustifiedII_def justified_alt, rule_format, OF Mcount]
       then consider
@@ -1982,7 +1979,7 @@ proof -
             apply (rule ccontr)
             apply (subst (asm) not_le)
             using nosupp[unfolded nonpos_upto_def supported_strong_def, simplified, rule_format]
-            using least dual_order.strict_trans2 s(1) apply fastforce
+            using least order.strict_trans2 s(1) apply fastforce
             done
           have \<Delta>inc: "0 < zcount ?\<Delta> s"
             using complex_change(3) count1s s(2) by auto
@@ -2011,13 +2008,13 @@ proof -
               done
             done
           have count1u: "zcount ?M1 u < 0"
-            using complex_change(4)[of u] nocaps[unfolded change(9) fun_upd_same] dual_order.strict_trans[OF s(1) u(1)] s(3)[OF u(1)] u(2) u(3)
+            using complex_change(4)[of u] nocaps[unfolded change(9) fun_upd_same] order.strict_trans[OF u(1) s(1)] s(3)[OF u(1)] u(2) u(3)
             by auto
           then have "nonpos_upto ?M1 u"
             unfolding nonpos_upto_def
-            using least dual_order.strict_implies_order dual_order.strict_trans2 s(1) u(1) by blast
+            using least order.strict_implies_order order.strict_trans1 s(1) u(1) by blast
           then have "supported_strong ?M1 t"
-            using count1u dual_order.strict_trans s(1) u(1) supported_strong_def by blast
+            using count1u order.strict_trans s(1) u(1) supported_strong_def by blast
           with nosupp have False
             by blast
         }
@@ -2040,8 +2037,9 @@ proof -
               apply (rule conjI, simp)
               apply (intro allI impI)
               apply (rule ccontr)
+              subgoal
               using assms(3)[unfolded InvCapsNonneg_def, rule_format]
-              apply (simp add: order_class.order.not_eq_order_implies_strict)
+              by (simp add: order_class.order.not_eq_order_implies_strict)
               done
             done
           have \<Delta>counts:
@@ -2065,7 +2063,7 @@ proof -
               unfolding complex_change(3)
               using complex_change(4) nle s(3) by (auto simp: \<Delta>counts(1,2)[OF s(1)])
             then show False
-              using s(1) least dual_order.strict_trans2
+              using s(1) least
               by (force dest!: nosupp[unfolded supported_strong_def, simplified, rule_format] simp: nonpos_upto_def)
           qed
           with s(2) have count0s: "0 < zcount M s"
@@ -2073,7 +2071,7 @@ proof -
           have False
             using inv0[OF count0s]
             apply (elim disj3_split)
-            using 2(1) dual_order.strict_trans s(1) supported_strong_def apply blast
+            using 2(1) order.strict_trans s(1) supported_strong_def apply blast
             using s(3) apply auto []
             using caps_le_ii0 apply linarith
             done
@@ -2092,12 +2090,12 @@ proof -
           apply simp
           done
       qed
-    next \<comment> \<open>Adding \<Delta> made M positive at t in c1\<close>
+    next \<comment> \<open>Adding @{term \<Delta>} made @{term M} positive at @{term t} in @{term c}1\<close>
       case 2
       { assume nosupp: "\<not> supported_strong ?M1 t"
         assume "\<forall>t'<t. \<not> 0 < zcount (c_caps c1 p) t'"
         then have nocaps: "\<forall>t'<t. zcount (c_caps c1 p) t' = 0"
-          using InvCapsNonneg_def assms(2) assms(3) order_class.le_less performop_preserves_InvCapsNonneg by fastforce
+          using InvCapsNonneg_def assms(2) assms(3) order_class.le_less performop_preserves_InvCapsNonneg by metis
         assume "\<not> zcount ?M1 t < zcount (c_caps c1 p) t"
         then have caps_le: "zcount (c_caps c1 p) t \<le> zcount ?M1 t"
           by linarith
@@ -2118,7 +2116,7 @@ proof -
               apply (rule exI[of _ u])
               apply clarsimp
               using assms(3)[unfolded InvCapsNonneg_def, rule_format]
-              apply (metis local.dual_order.trans order_class.order.not_eq_order_implies_strict)
+              apply (metis order.trans order_class.order.not_eq_order_implies_strict)
               done
             done
           subgoal
@@ -2136,7 +2134,7 @@ proof -
                 apply (rule exI[of _ u])
                 apply clarsimp
                 using assms(3)[unfolded InvCapsNonneg_def, rule_format]
-                apply (metis local.dual_order.strict_trans2 local.less_imp_le order_class.order.not_eq_order_implies_strict)
+                apply (metis order.strict_trans1 less_imp_le order_class.order.not_eq_order_implies_strict)
                 done
               done
             done
@@ -2163,7 +2161,7 @@ proof -
               unfolding complex_change(3)
               using complex_change(4) nle s(3) by (auto simp: \<Delta>counts(1,2)[OF less])
             then show False
-              using less least dual_order.strict_trans2
+              using less least order.strict_trans2
               by (force dest!: nosupp[unfolded supported_strong_def, simplified, rule_format] simp: nonpos_upto_def)
           qed
           with s(2) have count0s: "0 < zcount M s"
@@ -2178,7 +2176,7 @@ proof -
                 unfolding supported_strong_def
                 by blast
               have "0 \<le> zcount ?M1 u"
-                using least nosupp[unfolded supported_strong_def nonpos_upto_def, simplified, rule_format, of u] dual_order.strict_trans[OF less u(1)]
+                using least nosupp[unfolded supported_strong_def nonpos_upto_def, simplified, rule_format, of u] order.strict_trans[OF u(1) less]
                 by fastforce
               then have "0 < zcount ?\<Delta>pos u"
                 using \<Delta>counts(1)[of u] s(3) u(1) u(2) less by force
@@ -2199,7 +2197,7 @@ proof -
                   subgoal for p'
                     apply simp
                     apply (drule change(4)[unfolded minting_msg_def, rule_format])
-                    using local.order.strict_iff_order apply auto
+                    using order.strict_iff_order apply auto
                     done
                   done
                 done
@@ -2218,7 +2216,7 @@ proof -
             using 2(1) count0t by auto
         }
         ultimately have False
-          using local.order.not_eq_order_implies_strict s(1) by blast
+          using order.not_eq_order_implies_strict s(1) by blast
       }
       then show ?thesis
         by blast
@@ -2227,8 +2225,6 @@ proof -
   then show "justified (c_caps c1 p) ?M1"
     by (intro justified_leastI) blast
 qed
-
-subsubsection\<open>Lemma proofs\<close>
 
 lemma InvJustifiedII_implies_InvJustifiedGII:
   assumes "InvJustifiedII c"
@@ -2358,7 +2354,7 @@ lemma alw_InvJustifiedGII: "spec s \<Longrightarrow> alw (holds InvJustifiedGII)
   apply (simp add: alw_iff_sdrop InvJustifiedII_implies_InvJustifiedGII)
   done
 
-subsection\<open>InvTempJustified\<close>
+subsubsection\<open>InvTempJustified\<close>
 
 definition InvTempJustified where
   "InvTempJustified c = (\<forall>p. justified (c_caps c p) (c_temp c p))"
@@ -2440,7 +2436,7 @@ lemma alw_InvTempJustified: "spec s \<Longrightarrow> alw (holds InvTempJustifie
   using next'_preserves_InvTempJustified apply blast
   done
 
-subsection\<open>InvGlobNonposImpRecordsNonpos\<close>
+subsubsection\<open>InvGlobNonposImpRecordsNonpos\<close>
 
 text\<open>InvGlobNonposImpRecordsNonpos states that each processor's @{term "c_glob c q"} is a conservative
 approximation of @{term "records c"}.\<close>
@@ -2465,13 +2461,13 @@ lemma invs_imp_InvGlobNonposImpRecordsNonpos:
     assume gvu: "\<forall>sa\<le>t. zcount (c_glob c q) sa \<le> 0"
     assume uleqt: "u \<le> t"
     assume "\<not> zcount (records c) u \<le> 0"
-      \<comment> \<open>u is pointstamp that violates InvGlobNonposImpRecordsNonpos\<close>
+      \<comment> \<open>u is pointstamp that violates @{term InvGlobNonposImpRecordsNonpos}\<close>
     with assms(2) have u: "0 < zcount (records c) u"
       by linarith
-        \<comment> \<open>u' is the least pointstamp with positive nrec\<close>
+        \<comment> \<open>u' is the least pointstamp with positive @{term records}\<close>
     with uleqt obtain u' where u': "0 < zcount (records c) u'" "\<forall>u. 0 < zcount (records c) u \<longrightarrow> \<not> u < u'" "u' \<le> t"
       using order_zmset_exists_foundation[OF u] by auto
-        \<comment> \<open>from the nrec count we know that GII also has positive count\<close>
+        \<comment> \<open>from the @{term records} count we know that GII also has positive count\<close>
     from u'(1,3) assms(2) gvu have pos_gii: "0 < zcount ?GII u'"
       unfolding InvRecordCount_def
       by (metis add_diff_cancel_left' diff_eq_eq less_add_same_cancel1 order_class.order.strict_trans1 zcount_diff)
@@ -2481,21 +2477,21 @@ lemma invs_imp_InvGlobNonposImpRecordsNonpos:
         \<comment> \<open>uprightness gives us a lesser pointstamp with negative count in GII..\<close>
       then obtain v where v: "v \<le> u'" "zcount ?GII v < 0"
         using order.strict_implies_order supported_strong_def by blast
-          \<comment> \<open>..which is also negative in nrec..\<close>
+          \<comment> \<open>..which is also negative in @{term records}..\<close>
       with u'(3) v(1) assms(2) have "zcount (records c) v < 0"
-        by (metis (no_types, hide_lams) InvRecordCount_def add.commute gvu less_add_same_cancel2 dual_order.trans not_le order_class.dual_order.strict_trans1 zcount_union)
+        by (metis (no_types, hide_lams) InvRecordCount_def add.commute gvu less_add_same_cancel2 order.trans not_le order_class.order.strict_trans2 zcount_union)
           \<comment> \<open>..contradicting InvNrecNonneg\<close>
       with assms(3) have "False"
         unfolding InvRecordsNonneg_def
         using order_class.leD by blast
     }
     moreover
-    { \<comment> \<open>Change is justified by strictly lesser pointstamp in nrec\<close>
+    { \<comment> \<open>Change is justified by strictly lesser pointstamp in @{term records}\<close>
       assume "\<exists>t'<u'. 0 < zcount (records c) t'"
-        \<comment> \<open>v is a strictly lesser positive count in nrec..\<close>
+        \<comment> \<open>v is a strictly lesser positive count in @{term records}..\<close>
       then obtain v where v: "v < u'" "0 < zcount (records c) v"
         by auto
-          \<comment> \<open>..which contradicts the fact that we obtained u' as the least, positive pointstamp in nrec\<close>
+          \<comment> \<open>..which contradicts the fact that we obtained @{term u'} as the least, positive pointstamp in @{term records}\<close>
       with u'(2) have "False"
         by auto
     }
@@ -2550,7 +2546,7 @@ lemma alw_InvGlobVacantImpRecordsVacant: "spec s \<Longrightarrow> alw (holds In
   apply (simp add: alw_iff_sdrop invs_imp_InvGlobVacantImpRecordsVacant)
   done
 
-subsection\<open>SafeGlobVacantUptoImpliesStickyNrec\<close>
+subsubsection\<open>SafeGlobVacantUptoImpliesStickyNrec\<close>
 
 text\<open>This is the main safety property proved in the Abadi paper.\<close>
 
@@ -2562,9 +2558,9 @@ lemma alw_SafeGlobVacantUptoImpliesStickyNrec:
   "spec s \<Longrightarrow> alw SafeGlobVacantUptoImpliesStickyNrec s"
   by (meson alw_iff_sdrop invs_imp_SafeGlobVacantUptoImpliesStickyNrec alw_SafeRecordsMono alw_InvGlobVacantImpRecordsVacant)
 
-subsection\<open>InvGlobNonposEqVacant\<close>
+subsubsection\<open>InvGlobNonposEqVacant\<close>
 
-text\<open>The least pointstamps in glob are always positive, i.e. nonpos_upto and vacant_upto on glob
+text\<open>The least pointstamps in glob are always positive, i.e. @{term nonpos_upto} and @{term vacant_upto} on glob
 are equivalent.\<close>
 
 definition InvGlobNonposEqVacant where
@@ -2594,10 +2590,10 @@ proof -
         apply (meson order.ordering_axioms nonpos_upto_def np order_class.le_less ordering.trans zcount_ne_zero_iff)
         done
       done
-        \<comment> \<open>No records \<le> s can exist, since that would violate InvGlobNonposImpRecordsNonpos\<close>
+        \<comment> \<open>No records @{term "s' \<le> s"} can exist, since that would violate InvGlobNonposImpRecordsNonpos\<close>
     have norec: "s' \<le> s \<Longrightarrow> zcount (records c) s' = 0" for s'
-      by (metis (full_types) local.order.ordering_axioms nonneg nonpos_upto_def np order_class.antisym_conv ordering.trans s(1) safe)
-        \<comment> \<open>Hence GII must be positive at s\<close>
+      by (metis (full_types) order.ordering_axioms nonneg nonpos_upto_def np order_class.antisym_conv ordering.trans s(1) safe)
+        \<comment> \<open>Hence GII must be positive at @{term s}\<close>
     have gii: "zcount (GlobalIncomingInfoAt c q) s > 0"
       using count[of q] s(2) norec[of s, simplified]
       by (metis add.commute less_add_same_cancel1 zcount_union)
@@ -2610,7 +2606,7 @@ proof -
       by atomize_elim auto
     then have False
     proof cases
-      case 1 \<comment> \<open>s can't be supported_strong, since either glob or records would have to be positive at the support\<close>
+      case 1 \<comment> \<open>@{term s} can't be @{term supported_strong}, since either glob or records would have to be positive at the support\<close>
       then show False
         using norec count s(3)
         unfolding supported_strong_def
@@ -2618,9 +2614,9 @@ proof -
     next
       case 2 \<comment> \<open>no lesser capabilities exist\<close>
       then show ?thesis
-        using norec s(2,3) dual_order.order_iff_strict by auto
+        using norec s(2,3) order.order_iff_strict by auto
     next
-      case 3 \<comment> \<open>no capabilities at s exist\<close>
+      case 3 \<comment> \<open>no capabilities at @{term s} exist\<close>
       then show ?thesis
         unfolding norec[of s, simplified]
         using gii by auto
@@ -2643,7 +2639,7 @@ lemma alw_InvGlobNonposEqVacant: "spec s \<Longrightarrow> alw (holds InvGlobNon
     invs_imp_InvGlobNonposEqVacant
   by (metis alw_iff_sdrop holds.elims(2) holds.elims(3))
 
-subsection\<open>InvInfoJustifiedWithII and InvInfoJustifiedWithGII\<close>
+subsubsection\<open>InvInfoJustifiedWithII and InvInfoJustifiedWithGII\<close>
 
 definition InvInfoJustifiedWithII where
   "InvInfoJustifiedWithII c = (\<forall>k p q. justified_with (c_caps c p) (InfoAt c k p q) (IncomingInfo c (k+1) p q))"
@@ -2818,7 +2814,7 @@ lemma alw_InvInfoJustifiedWithGII: "spec s \<Longrightarrow> alw (holds InvInfoJ
   by (metis alw_InvCapsNonneg alw_InvInfoJustifiedWithII alw_InvJustifiedII alw_iff_sdrop holds.elims(2,3) invs_imp_InvInfoJustifiedWithGII)
 
 
-subsection\<open>SafeGlobMono and InvMsgInGlob\<close>
+subsubsection\<open>SafeGlobMono and InvMsgInGlob\<close>
 
 text\<open>The records in glob are monotonic. This implies the corollary InvMsgInGlob; No incoming message
 carries a timestamp change that would cause glob to regress.\<close>
@@ -2828,8 +2824,6 @@ definition SafeGlobMono where
 
 definition InvMsgInGlob where
   "InvMsgInGlob c = (\<forall>p q t. c_msg c p q \<noteq> [] \<longrightarrow> t \<in>#\<^sub>z hd (c_msg c p q) \<longrightarrow> (\<exists>t'\<le>t. 0 < zcount (c_glob c q) t'))"
-
-subsubsection\<open>Auxilliary lemmas\<close>
 
 lemma not_InvMsgInGlob_imp_not_SafeGlobMono:
   assumes "\<not> InvMsgInGlob c0"
@@ -2860,8 +2854,6 @@ lemma GII_eq_GIA: "GlobalIncomingInfo c 1 p q = (if c_msg c p q = [] then Global
   apply (rule Sum_eq_pick_changed_elem)
      apply (auto simp: IncomingInfo_def drop_Suc sum_list_hd_tl algebra_simps)
   done
-
-subsubsection\<open>Lemma Proofs\<close>
 
 lemma recvupd_preserves_GlobVacantUpto:
   assumes "GlobVacantUpto c0 q t"
@@ -2928,7 +2920,7 @@ proof (rule ccontr)
     from 2(2) s(1,3) have "zcount (InfoAt c0 0 p q) s \<ge> 0"
       by force
     have rc: "zcount (records c0) s = 0"
-      using dual_order.strict_implies_order dual_order.strict_trans1 nvu0 s(1) t'(1) vacant_upto_def by blast
+      using order.strict_implies_order order.strict_trans2 nvu0 s(1) t'(1) vacant_upto_def by blast
     show False
       using assms(6) change(1,4) s(1,2) rc t'(4)
       unfolding GII_eq_GIA InvRecordCount_def fun_upd_same
@@ -3215,4 +3207,6 @@ lemma alw_msg_glob: "spec s \<Longrightarrow>
 
 end
 
+(*<*)
 end
+(*>*)

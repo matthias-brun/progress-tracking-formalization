@@ -1,9 +1,11 @@
+section\<open>Antichains\<close>
+
+(*<*)
 theory Antichain
   imports
     Auxiliary
 begin
-
-section\<open>Antichain\<close>
+(*>*)
 
 definition incomparable where
   "incomparable A = (\<forall>x \<in> A. \<forall>y \<in> A. x \<noteq> y \<longrightarrow> \<not> x < y \<and> \<not> y < x)"
@@ -143,4 +145,6 @@ lemma set_antichain1[simp]: "x \<in> set_antichain X \<Longrightarrow> x \<in>\<
 lemma set_antichain2[simp]: "x \<in>\<^sub>A X \<Longrightarrow> x \<in> set_antichain X"
   by transfer simp
 
+(*<*)
 end
+(*>*)

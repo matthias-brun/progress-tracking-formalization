@@ -1,7 +1,13 @@
+section \<open>Local Progress Propagation\label{sec:propagate}\<close>
+
+(*<*)
 theory Propagate
   imports
     Graph
 begin
+(*>*)
+
+subsection \<open>Specification\<close>
 
 record (overloaded) ('loc, 't) configuration =
   c_work :: "'loc \<Rightarrow> 't zmultiset" (* worklists with not-yet-applied updates *)
@@ -113,7 +119,7 @@ lemma next'_inv[consumes 1, case_names next_change_multiplicity next_propagate n
   shows   "P c1"
   using assms unfolding next'_def by auto
 
-section\<open>Auxiliary\<close>
+subsection\<open>Auxiliary\<close>
 
 lemma next_change_multiplicity'_unique:
   assumes "n \<noteq> 0"
@@ -221,9 +227,9 @@ lemma after_summary_union: "after_summary (M + N) S = after_summary M S + after_
   by (simp add: sum.distrib after_summary_def)
 
 
-section\<open>Invariants\<close>
+subsection\<open>Invariants\<close>
 
-subsection\<open>Invariant: inv_imps_work_sum\<close>
+subsubsection\<open>Invariant: @{term inv_imps_work_sum}\<close>
 
 \<comment> \<open>Get timestamps in frontiers of loc's predecessor locations, apply respective summaries and
     return union of results.\<close>
@@ -284,11 +290,11 @@ lemma next_p_union_frontier_change:
     done
   done
 
-\<comment> \<open>init_config satisfies inv_imps_work_sum\<close>
+\<comment> \<open>@{term init_config} satisfies @{term inv_imps_work_sum}\<close>
 lemma init_imp_inv_imps_work_sum: "init_config c \<Longrightarrow> inv_imps_work_sum c"
   by (simp add: inv_imps_work_sum_def init_config_def)
 
-\<comment> \<open>CM preserves inv_imps_work_sum\<close>
+\<comment> \<open>CM preserves @{term inv_imps_work_sum}\<close>
 lemma cm_preserves_inv_imps_work_sum:
   assumes "next_change_multiplicity' c0 c1 loc t n"
     and   "inv_imps_work_sum c0"
@@ -418,13 +424,13 @@ proof -
     by (auto simp: Let_def inv_imps_work_sum_zcount inv_imps_work_sum_zcount_def)
 qed
 
-\<comment> \<open>PR preserves inv_imps_work_sum\<close>
+\<comment> \<open>PR preserves @{term inv_imps_work_sum}\<close>
 lemma p_preserves_inv_imps_work_sum:
   assumes "next_propagate' c0 c1 loc t"
     and   "inv_imps_work_sum c0"
   shows   "inv_imps_work_sum c1"
 proof -
-  \<comment> \<open>Given next_propagate for loc, t, we show the result for loc', t'.\<close>
+  \<comment> \<open>Given @{term next_propagate'} for loc, t, we show the result for loc', t'.\<close>
   { fix loc t loc' t'
     assume p': "next_propagate' c0 c1 loc t"
     note p = this[unfolded next_propagate'_def]
@@ -445,7 +451,7 @@ proof -
          = zcount (c_imp c0 loc) t + zcount (c_work c0 loc) t"
         by simp
           \<comment> \<open>Since the implications of other locations don't change and loc can't have an edge to
-              itself, union_frontiers at loc doesn't change.\<close>
+              itself, @{term union_frontiers} at loc doesn't change.\<close>
       moreover from p have "union_frontiers c1 loc = union_frontiers c0 loc"
         using summary_self by (auto intro!: all_eq_sum_eq arg_cong[where f = Sum])
           \<comment> \<open>For all the other timestamps the worklist and implications don't change.\<close>
@@ -474,7 +480,7 @@ proof -
         moreover from p loc sum have "c_work c1 loc' = c_work c0 loc'"
           by simp
             \<comment> \<open>Since the implications only change at loc and loc is not connected to loc',
-            union_frontiers doesn't change.\<close>
+            @{term union_frontiers} doesn't change.\<close>
         moreover from p loc sum have "union_frontiers c1 loc' = union_frontiers c0 loc'"
           by (auto intro!: all_eq_sum_eq arg_cong[where f = Sum])
         ultimately have
@@ -484,7 +490,7 @@ proof -
       }
       moreover
       { assume sum: "summary loc loc' \<noteq> {}\<^sub>A"
-          \<comment> \<open>union_frontiers at loc' changed by whatever amount the frontier changed.\<close>
+          \<comment> \<open>@{term union_frontiers} at loc' changed by whatever amount the frontier changed.\<close>
         note iiws
           unchanged_imps
           unchanged_ps
@@ -536,7 +542,7 @@ lemma spec_imp_iiws: "spec s \<Longrightarrow> alw (holds inv_imps_work_sum) s"
   using init_imp_inv_imps_work_sum next_preserves_inv_imps_work_sum
   by (auto intro: alw_invar simp: alw_mono spec_def)
 
-subsection\<open>Invariant: inv_imp_plus_work_nonneg\<close>
+subsubsection\<open>Invariant: @{term inv_imp_plus_work_nonneg}\<close>
 
 text \<open>There is never an update in the worklist that could cause implications to become negative.\<close>
 definition inv_imp_plus_work_nonneg where
@@ -568,7 +574,7 @@ lemma spec_imp_iipwn: "spec s \<Longrightarrow> alw (holds inv_imp_plus_work_non
   by blast
 
 
-subsection\<open>Invariant: inv_implications_nonneg\<close>
+subsubsection\<open>Invariant: @{term inv_implications_nonneg}\<close>
 
 lemma init_imp_inv_implications_nonneg:
   assumes "init_config c"
@@ -928,7 +934,7 @@ proof -
 qed
 
 
-section\<open>Proof of safe\<close>
+subsection\<open>Proof of Safety\<close>
 
 lemma results_in_sum_path_weights_append:
   "results_in t (sum_path_weights (xs @ [(loc2, s, loc3)])) = results_in (results_in t (sum_path_weights xs)) s"
@@ -1109,8 +1115,6 @@ next
     done
 qed
 
-\<comment> \<open>impl_safe is essentially the same as pairwise_path_safe, without worklists\<close>
-
 definition impl_safe :: "('loc, 't) configuration \<Rightarrow> bool" where
   "impl_safe c \<equiv> \<forall>loc1 loc2 t s. zcount (c_imp c loc1) t > 0 \<and> s \<in>\<^sub>A path_summary loc1 loc2
                    \<longrightarrow> (\<exists>t'. t' \<in>\<^sub>A frontier (c_imp c loc2) \<and> t' \<le> results_in t s)"
@@ -1140,7 +1144,7 @@ proof -
   then show "\<exists>t'. t' \<in>\<^sub>A frontier (c_imp c loc2) \<and> t' \<le> results_in t s"
     apply (intro exI[of _ u])
     apply (simp add: Mxs(2))
-    using t'(2) apply (meson dual_order.trans results_in_mono(1))
+    using t'(2) apply (meson order.trans results_in_mono(1))
     done
 qed
 
@@ -1221,7 +1225,7 @@ proof -
     done
 qed
 
-section\<open>A better safe?\<close>
+subsection\<open>A Better (More Invariant) Safety\<close>
 
 definition worklists_vacant_to :: "('loc, 't) configuration \<Rightarrow> 't \<Rightarrow> bool" where
   "worklists_vacant_to c t =
@@ -1233,9 +1237,9 @@ definition inv_safe :: "('loc, 't) configuration \<Rightarrow> bool" where
                             \<and> worklists_vacant_to c (results_in t s)
                 \<longrightarrow> (\<exists>t' \<le> results_in t s. t' \<in>\<^sub>A frontier (c_imp c loc2)))"
 
-text\<open>Intuition: Unlike safe, inv_safe should be an invariant because it only claims the safety property
-(_ \<in>A frontier (c_imp _ _)) for pointstamps that can't be modified by future propagated
-updates anymore (i.e. there are no upstream worklist entries which can result in a \<le> pointstamp).\<close>
+text\<open>Intuition: Unlike safe, @{term inv_safe} is an invariant because it only claims the safety property
+@{term "t' \<in>\<^sub>A frontier (c_imp c loc2)"} for pointstamps that can't be modified by future propagated
+updates anymore (i.e. there are no upstream worklist entries which can result in a less or equal pointstamp).\<close>
 
 lemma in_frontier_diff: "\<forall>y\<in>#\<^sub>zN. \<not> y \<le> x \<Longrightarrow> x \<in>\<^sub>A frontier (M - N) \<longleftrightarrow> x \<in>\<^sub>A frontier M"
   apply transfer'
@@ -1371,7 +1375,7 @@ proof -
   then show "\<exists>t'\<le>results_in t s. t' \<in>\<^sub>A frontier (c_imp c loc2)"
     apply (intro exI[of _ u])
     apply (simp add: Mxs(2))
-    using t''(2) t'(2) apply (meson dual_order.trans results_in_mono(1))
+    using t''(2) t'(2) apply (meson order.trans results_in_mono(1))
     done
 qed
 
@@ -1401,7 +1405,7 @@ lemma safe:
   shows   "safe c"
   by (rule inv_safe_safe[OF assms(3) inv_safe[OF assms(1,2)]])
 
-section\<open>The algorithm computes the frontier implied by the pointstamps\<close>
+subsection \<open>Implied Frontier\<close>
 
 abbreviation zmset_pos where "zmset_pos M \<equiv> zmset_of (mset_pos M)"
 
@@ -1466,8 +1470,8 @@ proof -
         \<Longrightarrow> \<exists>t'\<le>results_in t s. t' \<in>\<^sub>A frontier (c_imp c loc2)" for loc1 loc2 t s
     by (rule inv_safe[OF assms(1,2), unfolded inv_safe_def, rule_format])
       (auto elim: worklists_vacant_to_trans[OF assms(3)])
-      \<comment> \<open>Pointstamp b in the implied_frontier_alt is caused by a pointstamp a and summary s
-          and "results_in a s" is least among such pointstamps\<close>
+      \<comment> \<open>Pointstamp @{term b} in the @{term implied_frontier_alt} is caused by a pointstamp @{term a} and summary @{term s}
+          and @{term "results_in a s"} is least among such pointstamps\<close>
   from assms(4) obtain loc1 a s where loc1_a_s:
     "a \<in>\<^sub>A frontier (c_pts c loc1)" "s \<in>\<^sub>A path_summary loc1 loc2" "results_in a s = b"
     "\<forall>loc a' s'. a' \<in>\<^sub>A frontier (c_pts c loc) \<longrightarrow> s' \<in>\<^sub>A path_summary loc loc2 \<longrightarrow> \<not> results_in a' s' < b"
@@ -1479,8 +1483,8 @@ proof -
     done
   then have zcount_ps: "0 < zcount (c_pts c loc1) a"
     using member_frontier_pos_zmset by blast
-      \<comment> \<open>From `safe` we know that pointstamp a is reflected in the implications by some
-      poinstamp b' \<le> b\<close>
+      \<comment> \<open>From `safe` we know that pointstamp @{term a} is reflected in the implications by some
+      poinstamp @{term "b' \<le> b"}\<close>
   obtain b' where b': "b' \<in>\<^sub>A frontier (c_imp c loc2)" "b' \<le> results_in a s"
     using safe[OF zcount_ps loc1_a_s(2)] loc1_a_s(3) by blast
   have "b' = results_in a s"
@@ -1493,7 +1497,7 @@ proof -
         by (meson assms(3) results_in_mono(2) worklists_vacant_to_def flow.zero_le order_trans
             path_weight_refl zcount_inI)
     qed
-      \<comment> \<open>but the pointstamp can't be strictly less, because we know that "results_in a s" is least\<close>
+      \<comment> \<open>but the pointstamp can't be strictly less, because we know that @{term "results_in a s"} is least\<close>
     then obtain a' loc1' s' where a':
       "s' \<in>\<^sub>A path_summary loc1' loc2" "results_in a' s' \<le> b'" "a' \<in>\<^sub>A frontier (c_pts c loc1')"
       using implication_implies_pointstamp[OF b'(1) assms(1), simplified] by force
@@ -1507,7 +1511,7 @@ proof -
     then show ?thesis
       by (rule ccontr)
   qed
-    \<comment> \<open>Hence, the implied_frontier_alt pointstamp b is reflected in the implications\<close>
+    \<comment> \<open>Hence, the @{term implied_frontier_alt} pointstamp @{term b} is reflected in the implications\<close>
   with b' show "b \<in>\<^sub>A frontier (c_imp c loc2)"
     by (auto simp: loc1_a_s(3))
 qed
@@ -1526,7 +1530,7 @@ proof -
   have "zcount (c_work c loc) t = 0" if "results_in t s \<le> b" for t s loc
     using that by (meson assms(3) results_in_mono(2) worklists_vacant_to_def flow.zero_le
         order_trans path_weight_refl zcount_inI)
-      \<comment> \<open>Pointstamp b in the implications is caused by a pointstamp a and a summary s\<close>
+      \<comment> \<open>Pointstamp @{term b} in the implications is caused by a pointstamp @{term a} and a summary @{term s}\<close>
   then obtain loc1 a s where loc1_a_s:
     "s \<in>\<^sub>A path_summary loc1 loc2" "results_in a s \<le> b" "a \<in>\<^sub>A frontier (c_pts c loc1)"
     using implication_implies_pointstamp[OF assms(4) assms(1), simplified] by force
@@ -1539,9 +1543,9 @@ proof -
       by simp
     then show False
       using safe[OF zcount_a loc1_a_s(1)] assms(4) loc1_a_s(2)
-      using dual_order.strict_trans2 frontier_comparable_False by blast
+      using order.strict_trans1 frontier_comparable_False by blast
   qed
-    \<comment> \<open>`results_in a s` is a candidate for inclusion in the implied_frontier_alt..\<close>
+    \<comment> \<open>@{term "results_in a s"} is a candidate for inclusion in the @{term implied_frontier_alt}..\<close>
   have "0 < zcount (\<Sum>loc'\<in>UNIV. after_summary (zmset_frontier (c_pts c loc')) (path_summary loc' loc2)) (results_in a s)"
     unfolding after_summary_def
     apply (subst zcount_sum)
@@ -1558,14 +1562,14 @@ proof -
     apply (rule sum_pos[of _ _ a])
     using loc1_a_s(3) apply auto
     done
-      \<comment> \<open>..which means a pointstamp b' \<le> results_in a s must exist in the implied_frontier_alt..\<close>
+      \<comment> \<open>..which means a pointstamp @{term "b' \<le> results_in a s"} must exist in the @{term implied_frontier_alt}..\<close>
   then obtain b' where b': "b' \<in>\<^sub>A implied_frontier_alt c loc2" "b' \<le> results_in a s"
     by (auto simp: implied_frontier_alt_def elim: obtain_frontier_elem)
   then have "worklists_vacant_to c b'"
     using loc1_a_s(2) by (auto intro: worklists_vacant_to_trans[OF assms(3)])
   with b' have b'_frontier: "b' \<in>\<^sub>A frontier (c_imp c loc2)"
     using in_implied_frontier_alt_in_implication_frontier assms by blast
-      \<comment> \<open>..and this pointstamp must be equal to b'\<close>
+      \<comment> \<open>..and this pointstamp must be equal to @{term b'}\<close>
   have b'_ria: "b' = results_in a s"
   proof (rule ccontr)
     assume "b' \<noteq> results_in a s"
@@ -1574,7 +1578,7 @@ proof -
     from b'_frontier b'_lt b_ria assms(4) show False
       using frontier_comparable_False by blast
   qed
-    \<comment> \<open>Hence, the implication frontier pointstamp b is reflected in the implied_frontier_alt\<close>
+    \<comment> \<open>Hence, the implication frontier pointstamp @{term b} is reflected in the @{term implied_frontier_alt}\<close>
   from b' b'_ria b_ria show "b \<in>\<^sub>A implied_frontier_alt c loc2"
     by (auto simp: implied_frontier_alt_def)
 qed
@@ -1694,4 +1698,6 @@ lemmas implication_frontier_iff_implied_frontier_vacant =
 
 end
 
+(*<*)
 end
+(*>*)

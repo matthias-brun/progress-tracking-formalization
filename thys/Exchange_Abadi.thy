@@ -1,8 +1,11 @@
+section \<open>Clocks Protocol\label{sec:clocks}\<close>
+
+(*<*)
 theory Exchange_Abadi
   imports
     Auxiliary
 begin
-
+(*>*)
 
 type_synonym 't count_vec = "'t multiset"
 type_synonym 't delta_vec = "'t zmultiset"
@@ -24,7 +27,7 @@ definition upright :: "'t :: order delta_vec \<Rightarrow> bool" where
 
 lemma upright_alt:  "upright a \<longleftrightarrow> (\<forall>t. zcount a t > 0 \<longrightarrow> supported_strong a t)"
   unfolding upright_def supported_def supported_strong_def
-  by (rule iffI) (meson dual_order.strict_trans1 order.strict_trans1 order_zmset_exists_foundation')+
+  by (rule iffI) (meson order.strict_trans2 order.strict_trans1 order_zmset_exists_foundation')+
 
 definition beta_upright :: "'t :: order delta_vec \<Rightarrow> 't :: order delta_vec \<Rightarrow> bool" where
   "beta_upright va vb = (\<forall>t. zcount va t > 0 \<longrightarrow> (\<exists>s. s < t \<and> (zcount va s < 0 \<or> zcount vb s < 0)))"
@@ -421,9 +424,9 @@ lemma invs_imp_InvGlobVacantUptoImpliesNrec:
     from assms(1)[unfolded InvGlobalIncomingInfoUpright_def] have "upright (GlobalIncomingInfoAt (shd s) q)"
       by simp
     with * obtain v where **: "v \<le> u" "zcount (GlobalIncomingInfoAt (shd s) q) v < 0"
-      by (meson dual_order.strict_iff_order upright_def supported_def)
+      by (meson order.strict_iff_order upright_def supported_def)
     with assms(2) have "zcount (c_records (shd s)) v < 0"
-      by (metis (no_types, hide_lams) InvGlobalRecordCount_def add.right_neutral dual_order.trans globvut holds.elims(2) uleqt zcount_union)
+      by (metis (no_types, hide_lams) InvGlobalRecordCount_def add.right_neutral order.trans globvut holds.elims(2) uleqt zcount_union)
     with assms(3) show "False"
       using atLeastatMost_empty by auto
   qed
@@ -494,7 +497,7 @@ proof -
       with assms s x have "x \<le> t" "zcount va x > 0"
          apply -
          apply simp
-        apply (metis (no_types, hide_lams) add.left_neutral dual_order.order_iff_strict dual_order.trans vacant_upto_def zcount_union)
+        apply (metis (no_types, hide_lams) add.left_neutral order.order_iff_strict order.trans vacant_upto_def zcount_union)
         done
       with assms(2,3) s x show ?thesis
         by force
@@ -530,9 +533,9 @@ proof -
     with assms(2) obtain y where y: "y < x \<and> zcount vc y < 0 \<and> nonpos_upto vc y"
       using upright_obtain_support by blast
     with x have "y < t"
-      using dual_order.strict_trans by blast
+      using order.strict_trans by blast
     from assm x y have "\<not> zcount vb y + zcount vc y < 0"
-      by (metis dual_order.strict_implies_order dual_order.strict_trans2 not_less)
+      by (metis order.strict_implies_order order.strict_trans1 not_less)
     with y have "zcount vb y > 0"
       by linarith
     with assms(1) obtain z where z: "z < y \<and> zcount vb z < 0"
@@ -544,7 +547,7 @@ proof -
     with z have "zcount vc z > 0"
       by linarith
     with y z have "False"
-      using dual_order.strict_implies_order not_less by blast
+      using order.strict_implies_order not_less by blast
   }
   then show ?thesis
     using beta_upright_def zcount_union by fastforce
@@ -921,4 +924,6 @@ lemma alw_SafeGlobMono: "spec s \<Longrightarrow> alw (relates SafeGlobMono) s"
   apply (fastforce simp: SafeStickyGlobVacantUpto_def SafeGlobMono_def relates_def)
   done
 
+(*<*)
 end
+(*>*)
