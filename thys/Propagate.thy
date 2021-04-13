@@ -311,7 +311,7 @@ proof -
       by (simp add: inv_imps_work_sum_zcount)
     note iiws = iiws'[unfolded inv_imps_work_sum_zcount_def, THEN spec2]
     have unchanged_union: "union_frontiers c1 locX = union_frontiers c0 locX" for locX
-      using unchanged_imps by (auto intro: elems_eq_sum_eq)
+      using unchanged_imps by (auto intro: sum.cong)
         \<comment> \<open>For locations other than loc nothing changes.\<close>
     { assume loc: "loc' \<noteq> loc"
       note iiws = iiws'[unfolded inv_imps_work_sum_zcount_def, THEN spec2, of loc' t']
@@ -346,7 +346,7 @@ proof -
         note t'[THEN mem_frontier_diff]
           \<comment> \<open>then the worklist at t increased by 1\<close>
         then have "zcount (c_work c1 loc) t' = zcount (c_work c0 loc) t' + 1"
-          using cm by (auto intro: plus_minus_conv)
+          using cm by auto
             \<comment> \<open>and the frontier at t increased by 1\<close>
         moreover
         have "zcount (zmset_frontier (c_pts c1 loc)) t'
@@ -453,7 +453,7 @@ proof -
           \<comment> \<open>Since the implications of other locations don't change and loc can't have an edge to
               itself, @{term union_frontiers} at loc doesn't change.\<close>
       moreover from p have "union_frontiers c1 loc = union_frontiers c0 loc"
-        using summary_self by (auto intro!: all_eq_sum_eq arg_cong[where f = Sum])
+        using summary_self by (auto intro!: sum.cong arg_cong[where f = Sum])
           \<comment> \<open>For all the other timestamps the worklist and implications don't change.\<close>
       moreover from p have
         "tX \<noteq> t \<Longrightarrow> zcount (c_work c1 loc) tX = zcount (c_work c0 loc) tX" for tX
@@ -482,7 +482,7 @@ proof -
             \<comment> \<open>Since the implications only change at loc and loc is not connected to loc',
             @{term union_frontiers} doesn't change.\<close>
         moreover from p loc sum have "union_frontiers c1 loc' = union_frontiers c0 loc'"
-          by (auto intro!: all_eq_sum_eq arg_cong[where f = Sum])
+          by (auto intro!: sum.cong arg_cong[where f = Sum])
         ultimately have
           "zcount (c_imp c1 loc' + c_work c1 loc') t'
            = zcount (zmset_frontier (c_pts c1 loc') + union_frontiers c1 loc') t'"

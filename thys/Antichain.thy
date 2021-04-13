@@ -13,19 +13,19 @@ definition incomparable where
 lemma incomparable_empty[simp, intro]: "incomparable {}"
   unfolding incomparable_def by auto
 
-typedef (overloaded) 'sum :: order antichain =
-  "{A :: 'sum set. finite A \<and> incomparable A}"
+typedef (overloaded) 'a :: order antichain =
+  "{A :: 'a set. finite A \<and> incomparable A}"
   morphisms set_antichain antichain
   by auto
 
 setup_lifting type_definition_antichain
 
-lift_definition member_antichain :: "'sum :: order \<Rightarrow> 'sum antichain \<Rightarrow> bool" ("(_/ \<in>\<^sub>A _)" [51, 51] 50) is "Set.member" .
+lift_definition member_antichain :: "'a :: order \<Rightarrow> 'a antichain \<Rightarrow> bool" ("(_/ \<in>\<^sub>A _)" [51, 51] 50) is "Set.member" .
 
-abbreviation not_member_antichain :: "'sum :: order \<Rightarrow> 'sum antichain \<Rightarrow> bool" ("(_/ \<notin>\<^sub>A _)" [51, 51] 50) where
+abbreviation not_member_antichain :: "'a :: order \<Rightarrow> 'a antichain \<Rightarrow> bool" ("(_/ \<notin>\<^sub>A _)" [51, 51] 50) where
   "x \<notin>\<^sub>A A \<equiv> \<not> x \<in>\<^sub>A A"
 
-lift_definition empty_antichain :: "'sum :: order antichain" ("{}\<^sub>A") is "{}" by simp
+lift_definition empty_antichain :: "'a :: order antichain" ("{}\<^sub>A") is "{}" by simp
 
 lemma mem_antichain_nonempty[simp]: "s \<in>\<^sub>A A \<Longrightarrow> A \<noteq> {}\<^sub>A"
   by transfer auto
@@ -91,13 +91,13 @@ lemma antichain_add_commute: "(M :: 'a :: order antichain) + N = N + M"
   by transfer (auto simp: incomparable_def sup_commute)
 
 
-lift_definition filter_antichain :: "('sum :: order \<Rightarrow> bool) \<Rightarrow> 'sum antichain \<Rightarrow> 'sum antichain" is "Set.filter"
+lift_definition filter_antichain :: "('a :: order \<Rightarrow> bool) \<Rightarrow> 'a antichain \<Rightarrow> 'a antichain" is "Set.filter"
   by (auto simp: incomparable_def)
 
 syntax (ASCII)
-  "_ACCollect" :: "pttrn \<Rightarrow> 'sum :: order antichain \<Rightarrow> bool \<Rightarrow> 'sum antichain" ("(1{_ :\<^sub>A _./ _})")
+  "_ACCollect" :: "pttrn \<Rightarrow> 'a :: order antichain \<Rightarrow> bool \<Rightarrow> 'a antichain" ("(1{_ :\<^sub>A _./ _})")
 syntax
-  "_ACCollect" :: "pttrn \<Rightarrow> 'sum :: order antichain \<Rightarrow> bool \<Rightarrow> 'sum antichain" ("(1{_ \<in>\<^sub>A _./ _})")
+  "_ACCollect" :: "pttrn \<Rightarrow> 'a :: order antichain \<Rightarrow> bool \<Rightarrow> 'a antichain" ("(1{_ \<in>\<^sub>A _./ _})")
 translations
   "{x \<in>\<^sub>A M. P}" == "CONST filter_antichain (\<lambda>x. P) M"
 

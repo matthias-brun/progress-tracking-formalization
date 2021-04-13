@@ -356,26 +356,6 @@ lemma lift_invariant_to_spec:
 lemma timestamps_sum_distrib[simp]: "(\<Sum>p \<in> A. timestamps (f p)) = timestamps (\<Sum>p \<in> A. f p)"
   by (induction A rule: infinite_finite_induct) auto
 
-lemma zmset_add_diff_commute: "(a::'c zmultiset) + b - c = a + (b - c)"
-  by transfer (auto simp: equiv_zmset_def)
-
-lemma sum_if_distrib_diff:
-  fixes X :: "'b \<Rightarrow> ('c::{group_add,comm_monoid_add})"
-  shows "finite A \<Longrightarrow> b \<in> A \<Longrightarrow> (\<Sum>a\<in>A. if a=b then X a - Y a else X a) = (\<Sum>a\<in>A. X a) - Y b"
-  by (subst (2) diff_conv_add_uminus) (intro Sum_eq_pick_changed_elem, auto)
-
-lemma if_distrib_add: "a + (if P then b else c) = (if P then a + b else a + c)"
-  by (simp add: if_distrib)
-
-lemma if_distrib_minus: "a - (if P then b else c) = (if P then a - b else a - c)"
-  by (simp add: if_distrib)
-
-lemma sum_if_distrib_add': "finite A \<Longrightarrow> b \<in> A \<Longrightarrow> (\<Sum>a\<in>A. if a=b then X a + Y a else X a) = (\<Sum>a\<in>A. X a) + Y b"
-  by (simp add: sum_if_distrib_add[symmetric] elems_eq_sum_eq)
-
-lemma image_zmset_zmset_of: "image_zmset f (zmset_of M) = zmset_of (image_mset f M)"
-  by (induct M) auto
-
 lemma timestamps_zmset_of[simp]: "timestamps (zmset_of M) = zmset_of {# t. (p,t) \<in># M #}"
   by (induct M) auto
 
@@ -2848,7 +2828,8 @@ qed
 lemma GII_eq_GIA: "GlobalIncomingInfo c 1 p q = (if c_msg c p q = [] then GlobalIncomingInfoAt c q else GlobalIncomingInfoAt c q - hd (c_msg c p q))"
   unfolding GlobalIncomingInfo_def
   apply (cases "c_msg c p q = []")
-   apply (simp add: IncomingInfo_def all_eq_sum_eq)
+   apply (simp add: IncomingInfo_def)
+   apply (rule sum.cong[OF refl], simp)
   apply simp
   apply (subst diff_conv_add_uminus)
   apply (rule Sum_eq_pick_changed_elem)

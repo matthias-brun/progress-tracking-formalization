@@ -241,27 +241,6 @@ definition InvGlobalRecordCount where
 lemma init_InvGlobalRecordCount: "holds init_config s \<Longrightarrow> holds InvGlobalRecordCount s"
   by (simp add: InvGlobalRecordCount_def init_config_def GlobalIncomingInfo_def IncomingInfo_def)
 
-lemma sum_if_distrib_add: "finite A \<Longrightarrow> b \<in> A \<Longrightarrow> (\<Sum>a\<in>A. if a=b then X b + Y a else X a) = (\<Sum>a\<in>A. X a) + Y b"
-  by (simp add: ab_semigroup_add_class.add_ac(1) field_simps sum.remove)
-
-lemma sum_if_distrib_add': "finite A \<Longrightarrow> b \<in> A \<Longrightarrow> (\<Sum>a\<in>A. if a=b then X b + Y b else X a) = (\<Sum>a\<in>A. X a) + Y b"
-  using sum_if_distrib_add by fastforce
-
-lemma sum_list_hd_tl:
-  fixes xs :: "(_ :: ab_group_add) list"
-  shows "xs \<noteq> [] \<Longrightarrow> sum_list (tl xs) = (- hd xs) + sum_list xs"
-proof (induct xs)
-  case Nil
-  then show ?case by simp
-next
-  case (Cons a xs)
-  hence "sum_list (tl (a # xs)) = sum_list xs" by simp
-  hence "... = 0 + sum_list xs" by simp
-  hence "... = - hd (a # xs) + hd (a # xs) + sum_list xs" by simp
-  hence "... = - hd (a # xs) + sum_list (a # xs)" by simp
-  thus ?case by simp
-qed
-
 lemma if_eq_same: "(if a = b then f b else f a) = f a"
   by auto
 
@@ -301,7 +280,7 @@ lemma next_InvGlobalRecordCount: "holds InvGlobalRecordCount s \<Longrightarrow>
         apply simp
        apply (subst add.commute)
        apply (simp add: sum.distrib)
-       apply (subst sum_if_distrib_add')
+       apply (subst sum_if_distrib_add)
          apply simp
         apply simp
        apply (simp add: add.assoc)

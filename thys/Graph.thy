@@ -101,7 +101,7 @@ next
       using path(2)[of xs' us]
       by (auto intro: path.intros)
     subgoal for us
-      by (cases "us=[]") (auto intro: path.intros)
+      by (cases "us=[]") (auto intro: path.intros simp: Cons_eq_append_conv)
     done
 qed
 

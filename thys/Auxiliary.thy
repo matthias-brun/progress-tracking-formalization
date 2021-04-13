@@ -11,54 +11,10 @@ begin
 
 subsection\<open>General\<close>
 
-lemma UNIV_prod: "UNIV = UNIV \<times> UNIV"
-  by simp
-
-lemma sum_list_singleton[simp]: "sum_list [x] = x"
-  by (induct "[x]") auto
-
 lemma sum_list_hd_tl:
   fixes xs :: "(_ :: group_add) list"
   shows "xs \<noteq> [] \<Longrightarrow> sum_list (tl xs) = (- hd xs) + sum_list xs"
-proof (induct xs)
-  case Nil
-  then show ?case by simp
-next
-  case (Cons a xs)
-  hence "sum_list (tl (a # xs)) = sum_list xs" by simp
-  hence "... = 0 + sum_list xs" by simp
-  hence "... = - hd (a # xs) + hd (a # xs) + sum_list xs" by simp
-  hence "... = - hd (a # xs) + sum_list (a # xs)" by simp
-  thus ?case by simp
-qed
-
-lemma plus_minus_conv: "x - y = 1 \<Longrightarrow> (x::int) = y + 1"
-  by auto
-
-lemma min_plus[simp]: "min (i::nat) (i+j) = i"
-  by simp
-
-lemma take_take_plus[simp]: "take i (take (i+j) xs) = take i xs"
-  by auto
-
-lemma singleton_eq_append_nonempty[dest]:
-  "[x] = xs @ ys \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> xs = [x] \<and> ys = []"
-  by (induct xs) auto
-
-lemma lhs_rhs_0_add: "(a::int) = 0 \<Longrightarrow> b = 0 \<Longrightarrow> a + b = 0"
-  by simp
-
-lemma insert_cartesian1: "insert a A \<times> B = Pair a ` B \<union> A \<times> B"
-  by auto
-
-lemma set_comp_intersect: "{x. P x} \<inter> M = {x\<in>M. P x}"
-  by auto
-
-lemma intersect_Collect_conv_comprehension: "A \<inter> Collect P = {a \<in> A. P a}"
-  by (induct A rule: infinite_finite_induct) auto
-
-lemma minus_Collect_conv_Not: "- Collect P = Collect (Not \<circ> P)"
-  by auto
+  by (cases xs) simp_all
 
 lemma finite_distinct_bounded: "finite A \<Longrightarrow> finite {xs. distinct xs \<and> set xs \<subseteq> A}"
   apply (rule finite_subset[of _ "\<Union>n \<in> {0 .. card A}. {xs.  length xs = n \<and> distinct xs \<and> set xs \<subseteq> A}"])
@@ -66,34 +22,8 @@ lemma finite_distinct_bounded: "finite A \<Longrightarrow> finite {xs. distinct 
   subgoal by auto
   done
 
-lemma GreatestI2_ex_nat:
-  "\<lbrakk> \<exists>k::nat. P k;  \<forall>y. P y \<longrightarrow> y \<le> b;  \<And>x. P x \<Longrightarrow> \<forall>y. P y \<longrightarrow> y \<le> x \<Longrightarrow> Q x\<rbrakk> \<Longrightarrow> Q (Greatest P)"
-  by (erule exE) (metis GreatestI_ex_nat Greatest_le_nat)
-
-lemma last_eq_hd: "length xs = 1 \<Longrightarrow> last xs = hd xs"
-  by (cases xs) auto
-
-lemma nonempty_tl_empty_length: "xs \<noteq> [] \<Longrightarrow> tl xs = [] \<Longrightarrow> length xs = 1"
-  by (simp add: Nitpick.size_list_simp(2))
-
-lemma set_eq_singleton:
-  assumes "xs \<noteq> []" "\<And>i. i < length xs \<Longrightarrow> xs ! i = hd xs"
-  shows   "set xs = {hd xs}"
-  using assms
-proof (induct xs)
-  case (Cons a xs)
-  show ?case
-    apply (cases "xs = []")
-    subgoal by auto
-    subgoal by (metis Cons(1,3-) in_set_conv_nth insert_Diff insert_Diff_single insert_iff list.sel(1) list.set_sel(1) list.simps(15) nth_mem)
-    done
-qed simp
-
 
 subsection\<open>Sums\<close>
-
-lemma elems_eq_sum_eq: "(\<And>x. x\<in>M \<longrightarrow> f x = g x) \<Longrightarrow> (\<Sum>x\<in>M. f x) = (\<Sum>x\<in>M. g x)"
-  by simp
 
 lemma Sum_eq_pick_changed_elem:
   assumes "finite M"
@@ -110,10 +40,7 @@ next
   proof (cases "x=m")
     case True
     with insert have "sum f F = sum g F"
-      apply (intro elems_eq_sum_eq)
-      subgoal for y
-        using insert(6)[of y] by auto
-      done
+      by (intro sum.cong[OF refl]) force
     with insert True show ?thesis
       by (auto simp: add.commute add.left_commute)
   next
@@ -123,48 +50,11 @@ next
   qed
 qed
 
-lemma nonpos_sum_elems_zero: "finite X \<Longrightarrow> (\<Sum>x\<in>X. f x) \<le> 0 \<Longrightarrow> \<forall>x\<in>X. f x \<ge> 0 \<Longrightarrow> y \<in> X \<Longrightarrow> (f y::int) = 0"
-proof (induct X rule: finite_induct)
-  case (insert x F)
-  then show ?case
-    using sum_nonneg by fastforce
-qed simp
-
-lemma sum_add_elem: "finite M \<Longrightarrow> y \<notin> M \<Longrightarrow> (\<Sum>x\<in>M. f x) + f y = (\<Sum>x\<in>M\<union>{y}. f x)"
-  by (induct M rule: finite_induct) (auto simp: add.commute)
-
 lemma sum_pos_ex_elem_pos: "(0::int) < (\<Sum>m\<in>M. f m) \<Longrightarrow> \<exists>m\<in>M. 0 < f m"
-  by (induct rule: infinite_finite_induct) fastforce+
-
-lemma all_eq_sum_eq:
-  assumes "\<forall>x. f0 x = f1 x"
-  shows "(\<Sum>x\<in>M. f0 x) = (\<Sum>x\<in>M. f1 x)"
-  using assms by simp
+  by (meson not_le sum_nonpos)
 
 lemma sum_if_distrib_add: "finite A \<Longrightarrow> b \<in> A \<Longrightarrow> (\<Sum>a\<in>A. if a=b then X b + Y a else X a) = (\<Sum>a\<in>A. X a) + Y b"
   by (simp add: Sum_eq_pick_changed_elem)
-
-lemma sum_cartesian_if: "finite A \<Longrightarrow> finite B \<Longrightarrow> a' \<in> A \<Longrightarrow> (\<Sum>x\<in>A\<times>B. case x of (a, b) \<Rightarrow> if a = a' then f b else 0) = (\<Sum>b\<in>B. f b)"
-proof (induct rule: finite_induct)
-  case (insert x F)
-  from insert(1,2,4-) show ?case
-    apply (cases "a'=x")
-     apply simp
-     apply (subst insert_cartesian1)
-     apply (subst sum.union_disjoint)
-        apply (auto simp: sum.neutral sum.reindex inj_on_def) [4]
-    apply simp
-    apply (frule insert(3)[OF insert(4)])
-    apply (subst insert_cartesian1)
-    apply (subst sum.union_disjoint)
-       apply (auto simp: sum.neutral)
-    done
-qed simp
-
-lemma sum_eq_split_sums:
-  assumes "\<And>x. x \<in> M \<Longrightarrow> f x = g x + h x"
-  shows   "(\<Sum>x\<in>M. f x) = (\<Sum>x\<in>M. g x) + (\<Sum>x\<in>M. h x)"
-  by (simp add: assms sum.distrib)
 
 subsection\<open>Partial Orders\<close>
 
@@ -174,132 +64,27 @@ lemma (in order) order_finite_set_exists_foundation:
     and   "t \<in> M"
   shows   "\<exists>s\<in>M. s \<le> t \<and> (\<forall>u\<in>M. \<not> u < s)"
   using assms
-  apply (induct M arbitrary: t rule: finite_induct)
-   apply blast
-  apply clarsimp
-  apply safe
-    apply (meson less_le_not_le order_trans)
-   apply (meson less_le_not_le order_trans)
-  apply (meson order.strict_implies_order order.strict_trans)
-  done
+  by (simp add: dual_order.strict_iff_order finite_has_minimal2)
 
 lemma order_finite_set_obtain_foundation:
   fixes   t :: "_ :: order"
   assumes "finite M"
     and   "t \<in> M"
-  obtains s where "s \<in> M \<and> s \<le> t \<and> (\<forall>u\<in>M. \<not> u < s)"
+  obtains s where "s \<in> M" "s \<le> t" "\<forall>u\<in>M. \<not> u < s"
   using assms order_finite_set_exists_foundation by blast
 
 subsection\<open>Multisets\<close>
 
-lemma multiset_eq_minus_plus_conv: "x \<in># N \<Longrightarrow> (M = N - {#x#}) = (M + {#x#} = N)"
-  by auto
-
-lemma subset_mset_subset_sum: "finite X \<Longrightarrow> x \<in> X \<Longrightarrow> M \<subseteq># f x \<Longrightarrow> M \<subseteq># sum f X"
-proof (induct rule: finite_induct)
-  case (insert y F)
-  then show ?case
-    apply (cases "y=x")
-    subgoal
-      by (simp add: subset_mset.add_increasing2)
-    subgoal
-      by (simp add: subset_mset.add_increasing)
-    done
-qed simp
-
-lemma multiset_sum_diff:
-  fixes M :: "'a multiset"
-  assumes "y \<in> X"
-    and   "M \<subseteq># (\<Sum>x\<in>X. f x)"
-    and   "M \<subseteq># f y"
-  shows "(\<Sum>x\<in>X. f x) - M = (\<Sum>x\<in>X. if x = y then f y - M else f x)"
-  using assms
-proof (induct X rule: infinite_finite_induct)
-  case (insert x F)
-  show ?case
-    apply (cases "x=y")
-    subgoal
-      using insert(1,2)
-      by (simp add: elems_eq_sum_eq subset_mset.diff_add_assoc2[OF assms(3)])
-    subgoal
-      using insert(1,2,4,5,6)
-      apply simp
-      apply (frule subset_mset_subset_sum[OF insert(1), rotated, of _ f y, OF insert(6)])
-      apply (subst multiset_diff_union_assoc)
-       apply simp
-      apply (subst union_left_cancel)
-      apply (rule insert(3))
-        apply auto
-      done
-    done
-qed simp_all
-
-lemma mset_sum_eq_sum_minus_delta:
-  fixes f :: "_ \<Rightarrow> _ multiset"
-  assumes "finite M"
-    and "m \<in> M" "f m = g m - \<Delta>" "\<Delta> \<subseteq># g m"
-    and "\<And>n. n \<noteq> m \<and> n \<in> M \<Longrightarrow> f n = g n"
-  shows "(\<Sum>x\<in>M. f x) = (\<Sum>x\<in>M. g x) - \<Delta>"
-  using assms
-proof (induct M arbitrary: m rule: finite_induct)
-  case empty
-  then show ?case by simp
-next
-  case (insert x F)
-  then show ?case
-  proof (cases "x=m")
-    case True
-    with insert have "sum f F = sum g F"
-      apply (intro elems_eq_sum_eq)
-      subgoal for y
-        using insert(7)[of y] by auto
-      done
-    with insert True show ?thesis
-      by auto
-  next
-    case False
-    with insert show ?thesis
-      by (simp add: subset_mset_subset_sum)
-  qed
-qed
-
-lemma finite_nonzero_count[simp]: "finite {t. count M t > 0}"
+lemma finite_nonzero_count: "finite {t. count M t > 0}"
   using count unfolding multiset_def by auto
 
 lemma finite_count[simp]: "finite {t. count M t > i}"
   by (rule finite_subset[OF _ finite_nonzero_count[of M]]) (auto simp only: set_mset_def)
 
-lemma elems_eq_sum_mset_eq: "(\<And>x. x \<in># M \<longrightarrow> f x = g x) \<Longrightarrow> (\<Sum>x\<in>#M. f x) = (\<Sum>x\<in>#M. g x)"
-  by simp
-
-lemma sum_mset_eq_pick_changed_elem:
-  assumes "f m = g m + \<Delta>"
-    and   "\<And>n. n \<noteq> m \<and> n \<in># M \<Longrightarrow> f n = g n"
-  shows   "(\<Sum>x\<in>#M. f x) = (\<Sum>x\<in>#M. g x) + count M m * \<Delta>"
-  using assms by (induct M) auto
-
-lemma in_mset_in_sum_mset: "finite MM \<Longrightarrow> x \<in># f M \<Longrightarrow> M \<in> MM \<Longrightarrow> x \<in># (\<Sum>M\<in>MM. f M)"
-  by (induct MM rule: finite_induct) auto
-
-lemma mset_plus_subseteq_minus: "A + B \<subseteq># N \<Longrightarrow> A \<subseteq># N - B"
-  by (meson mset_subset_eq_add_right subset_mset.le_diff_conv2 subset_mset.order.trans)
-
-lemma image_mset_take_drop_subseteq: "{# (p,m). m \<in># mset xs #} \<subseteq># q \<Longrightarrow> {# (p,m). m \<in># mset (drop i xs) #} \<subseteq># q - {# (p,m). m \<in># mset (take i xs) #}"
-  apply (rule mset_plus_subseteq_minus)
-  apply (subst add.commute)
-  apply (simp flip: image_mset_union mset_append)
-  done
-
 subsection\<open>Signed Multisets\<close>
-
-lemma zcount_nonemptyI: "zcount M t \<noteq> 0 \<Longrightarrow> M \<noteq> {#}\<^sub>z"
-  by auto
 
 lemma zcount_zmset_of_nonneg[simp]: "0 \<le> zcount (zmset_of M) t"
   by simp
-
-lemma zcount_union_subseteq: "{t. 0 < zcount (A+B) t} \<subseteq> {t. 0 < zcount A t} \<union> {t. 0 < zcount B t}"
-  by auto
 
 lemma finite_zcount_pos[simp]: "finite {t. zcount M t > 0}"
   apply transfer
@@ -323,30 +108,17 @@ lemma pos_zcount_in_zmset: "0 < zcount M x \<Longrightarrow> x \<in>#\<^sub>z M"
 lemma zmset_elem_nonneg: "x \<in>#\<^sub>z M \<Longrightarrow> (\<And>x. x \<in>#\<^sub>z M \<Longrightarrow> 0 \<le> zcount M x) \<Longrightarrow> 0 < zcount M x"
   by (simp add: order.order_iff_strict zcount_eq_zero_iff)
 
-lemma zero_le_sum_mset_single[simp]: "0 \<le> zcount (\<Sum>x\<in>#M. {#f x#}\<^sub>z) t"
-  by (induct M) auto
-
 lemma zero_le_sum_single: "0 \<le> zcount (\<Sum>x\<in>M. {#f x#}\<^sub>z) t"
   by (induct M rule: infinite_finite_induct) auto
 
 lemma mem_zmset_of[simp]: "x \<in>#\<^sub>z zmset_of M \<longleftrightarrow> x \<in># M"
   by (simp add: set_zmset_def)
 
-lemma zmset_of_Diff: "N \<subseteq># M \<Longrightarrow> zmset_of M - zmset_of N = zmset_of (M - N)"
-proof (induct M)
-  case (add x M)
-  then show ?case
-    by (metis add_right_cancel diff_add_cancel diff_add_zmset_swap subset_mset.diff_add zmset_of_add_mset zmset_of_plus)
-qed auto
-
 lemma mset_neg_minus: "mset_neg (abs_zmultiset (Mp,Mn)) = Mn-Mp"
   by (simp add: mset_neg.abs_eq)
 
 lemma mset_pos_minus: "mset_pos (abs_zmultiset (Mp,Mn)) = Mp-Mn"
   by (simp add: mset_pos.abs_eq)
-
-lemma mset_neg_sum_mset: "(\<And>m. m \<in># M \<Longrightarrow> mset_neg (f m) = {#}) \<Longrightarrow> mset_neg (\<Sum>m\<in>#M. f m) = {#}"
-  by (induct M) auto
 
 lemma mset_neg_sum_set: "(\<And>m. m \<in> M \<Longrightarrow> mset_neg (f m) = {#}) \<Longrightarrow> mset_neg (\<Sum>m\<in>M. f m) = {#}"
   by (induct M rule: infinite_finite_induct) auto
@@ -368,9 +140,6 @@ lemma mset_neg_empty_iff: "mset_neg M = {#} \<longleftrightarrow> (\<forall>t. 0
 
 lemma mset_neg_zcount_nonneg: "mset_neg M = {#} \<Longrightarrow> 0 \<le> zcount M t"
   by (subst (asm) mset_neg_empty_iff) simp
-
-lemma mset_neg_emptyI[intro]: "(\<And>t. 0 \<le> zcount M t) \<Longrightarrow> mset_neg M = {#}"
-  using mset_neg_empty_iff by blast
 
 lemma in_zmset_conv_pos_neg_disj: "x \<in>#\<^sub>z M \<longleftrightarrow> x \<in># mset_pos M \<or> x \<in># mset_neg M"
   by (metis count_mset_pos in_diff_zcount mem_zmset_of mset_pos_neg_partition nat_code(2) not_in_iff zcount_ne_zero_iff)
@@ -471,13 +240,6 @@ lemma (in order) elem_order_zmset_exists_foundation:
   shows   "\<exists>s\<in>#\<^sub>zM. s \<le> x \<and> (\<forall>u\<in>#\<^sub>zM. \<not> u < s)"
   by (rule order_finite_set_exists_foundation[OF finite_set_zmset, OF assms(1)])
 
-lemma (in order) elem_order_zmset_exists_foundation':
-  fixes x :: 'a
-  assumes "x \<in>#\<^sub>z M"
-  shows   "\<exists>s\<in>#\<^sub>zM. s \<le> x \<and> (\<forall>u<s. u \<notin>#\<^sub>z M)"
-  using assms elem_order_zmset_exists_foundation
-  by (meson le_less_linear)
-
 subsubsection\<open>Image of a Signed Multiset\<close>
 
 lift_definition image_zmset :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a zmultiset \<Rightarrow> 'b zmultiset" is
@@ -512,7 +274,7 @@ lemma mset_neg_image_zmset: "mset_neg M = {#} \<Longrightarrow> mset_neg (image_
   by transfer (auto simp add: image_mset_subseteq_mono mset_subset_eqI mset_subset_eq_count)
 
 lemma nonneg_zcount_image_zmset[simp]: "(\<And>t. 0 \<le> zcount M t) \<Longrightarrow> 0 \<le> zcount (image_zmset f M) t"
-  by (auto intro: mset_neg_zcount_nonneg mset_neg_image_zmset)
+  by (meson mset_neg_empty_iff mset_neg_image_zmset)
 
 lemma image_zmset_add_zmset[simp]: "image_zmset f (add_zmset t M) = add_zmset (f t) (image_zmset f M)"
   by transfer (auto simp: equiv_zmset_def)
@@ -613,9 +375,6 @@ lemma alw_relatesD[dest]: "alw (relates P) s \<Longrightarrow> P (shd s) (shd (s
 
 lemma relatesI[intro]: "P (shd s) (shd (stl s)) \<Longrightarrow> relates P s"
   by (auto simp: relates_def)
-
-lemma holds_smap_conv_comp: "holds P (smap f s) = holds (P o f) s"
-  by simp
 
 lemma alw_holds_smap_conv_comp: "alw (holds P) (smap f s) = alw (\<lambda>s. (P o f) (shd s)) s"
   apply (rule iffI)
